@@ -134,6 +134,9 @@ export default function Inventory() {
   const [cliente, setCliente] = React.useState({ nombre: '', telefono: '', email: '', nit: '' })
   const [esClienteExistente, setEsClienteExistente] = React.useState(false)
   const [clienteSeleccionado, setClienteSeleccionado] = React.useState(null)
+  const hasClienteSeleccionado = Boolean(
+    clienteSeleccionado || (cliente.nombre && cliente.nombre.trim())
+  )
 
   const [categoria, setCategoria] = React.useState('')
   const [marca, setMarca] = React.useState('')
@@ -372,6 +375,42 @@ export default function Inventory() {
       qty: 1,
       error: '',
     })
+  }
+
+  const handleClienteInputChange = (_, newInputValue) => {
+    setCliente(prev => ({ ...prev, nombre: newInputValue, telefono: '', email: '', nit: '' }))
+    setClienteSeleccionado(null)
+    setEsClienteExistente(false)
+  }
+
+  const handleClienteChange = (_, newValue) => {
+    if (!newValue) {
+      setClienteSeleccionado(null)
+      setEsClienteExistente(false)
+      setCliente(prev => ({ ...prev, telefono: '', email: '', nit: '' }))
+      return
+    }
+
+    if (typeof newValue === 'string') {
+      setCliente({
+        nombre: newValue,
+        telefono: '',
+        email: '',
+        nit: '',
+      })
+      setClienteSeleccionado(null)
+      setEsClienteExistente(false)
+      return
+    }
+
+    setClienteSeleccionado(newValue)
+    setCliente({
+      nombre: newValue.nombre,
+      telefono: newValue.telefono ?? '',
+      email: newValue.email ?? '',
+      nit: newValue.nit ?? '',
+    })
+    setEsClienteExistente(true)
   }
 
   const handleConfirmQty = () => {
@@ -657,7 +696,7 @@ export default function Inventory() {
       {/* -------- IZQUIERDA: INVENTARIO -------- */}
       <Box sx={{ flex: 3 }}>
         <Typography variant="h5" sx={{ mb: 1.5, fontWeight: 600 }}>
-          Inventario
+          Productos
         </Typography>
 
         <Stack
@@ -739,6 +778,7 @@ export default function Inventory() {
               <ProductCard
                 product={prod}
                 onClick={() => openQtySelector(prod)}
+                showPrice={hasClienteSeleccionado}
               />
             </Grid>
           ))}
@@ -785,7 +825,7 @@ export default function Inventory() {
         <DialogActions>
           <Button onClick={handleCloseQtyDialog}>Cancelar</Button>
           <Button variant="contained" onClick={handleConfirmQty}>
-            Añadir al carrito
+            Añadir a la orden
           </Button>
         </DialogActions>
       </Dialog>
@@ -805,8 +845,29 @@ export default function Inventory() {
         }}
       >
         <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
-          🛒 Carrito
+          Orden
         </Typography>
+        <Autocomplete
+          fullWidth
+          size="small"
+          freeSolo
+          options={clientes}
+          getOptionLabel={(option) =>
+            typeof option === 'string' ? option : option.nombre
+          }
+          value={esClienteExistente ? clienteSeleccionado : null}
+          inputValue={cliente.nombre}
+          onInputChange={handleClienteInputChange}
+          onChange={handleClienteChange}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Selecciona cliente"
+              placeholder="Nombre del cliente"
+            />
+          )}
+          sx={{ mb: 1 }}
+        />
         <Divider sx={{ mb: 1 }} />
 
         <Box sx={{ flex: 1, overflowY: 'auto' }}>
@@ -822,7 +883,11 @@ export default function Inventory() {
               >
                 <ListItemText
                   primary={`${item.descripcion}`}
-                  secondary={`Q ${item.precio.toFixed(2)} x ${item.qty}`}
+                  secondary={
+                    hasClienteSeleccionado
+                      ? `Q ${item.precio.toFixed(2)} x ${item.qty}`
+                      : 'Selecciona cliente para ver precios'
+                  }
                 />
               </ListItem>
             ))}
@@ -830,7 +895,7 @@ export default function Inventory() {
 
           {cart.length === 0 && (
             <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mt: 4 }}>
-              No hay productos en el carrito
+              No hay productos en la orden
             </Typography>
           )}
         </Box>
@@ -839,29 +904,37 @@ export default function Inventory() {
 
         <Box sx={{ textAlign: 'right' }}>
           <Stack spacing={1} alignItems="flex-end">
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                Total: Q {totalWithDiscount.toFixed(2)}
-              </Typography>
-              <TextField
-                size="small"
-                label="Descuento"
-                value={discount}
-                onChange={(e) => setDiscount(e.target.value)}
-                type="number"
-                inputProps={{ min: 0, step: '0.01' }}
-                sx={{ width: 140 }}
-              />
-            </Stack>
-            {discountValue > 0 && (
-              <Typography variant="caption" color="text.secondary">
-                Subtotal Q {subtotal.toFixed(2)} - Descuento Q {discountValue.toFixed(2)}
+            {hasClienteSeleccionado ? (
+              <>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                    Total: Q {totalWithDiscount.toFixed(2)}
+                  </Typography>
+                  <TextField
+                    size="small"
+                    label="Descuento"
+                    value={discount}
+                    onChange={(e) => setDiscount(e.target.value)}
+                    type="number"
+                    inputProps={{ min: 0, step: '0.01' }}
+                    sx={{ width: 140 }}
+                  />
+                </Stack>
+                {discountValue > 0 && (
+                  <Typography variant="caption" color="text.secondary">
+                    Subtotal Q {subtotal.toFixed(2)} - Descuento Q {discountValue.toFixed(2)}
+                  </Typography>
+                )}
+              </>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                Selecciona un cliente para ver precios y totales
               </Typography>
             )}
             <Button
               variant="contained"
               color="primary"
-              disabled={cart.length === 0}
+              disabled={cart.length === 0 || !hasClienteSeleccionado}
               onClick={handleOpenCheckout}
             >
               Finalizar compra
@@ -884,47 +957,8 @@ export default function Inventory() {
               }
               value={esClienteExistente ? clienteSeleccionado : null}
               inputValue={cliente.nombre}
-              onInputChange={(event, newInputValue) => {
-                // cuando el usuario escribe
-                setCliente(prev => ({ ...prev, nombre: newInputValue }))
-                setClienteSeleccionado(null)
-                setEsClienteExistente(false)
-                // si quieres, limpiar tel cuando cambia el nombre:
-                setCliente(prev => ({ ...prev, telefono: '', email: '', nit: '' }))
-              }}
-              onChange={(event, newValue) => {
-                // cuando selecciona algo del dropdown o “confirma” texto
-                if (!newValue) {
-                  // limpiaron el campo
-                  setClienteSeleccionado(null)
-                  setEsClienteExistente(false)
-                  setCliente(prev => ({ ...prev, telefono: '', email: '', nit: '' }))
-                  return
-                }
-
-                if (typeof newValue === 'string') {
-                  // nombre escrito a mano, no de la lista
-                  setCliente({
-                    nombre: newValue,
-                    telefono: '',
-                    email: '',
-                    nit: '',
-                  })
-                  setClienteSeleccionado(null)
-                  setEsClienteExistente(false)
-                  return
-                }
-
-                // aquí sí es un cliente de la lista
-                setClienteSeleccionado(newValue)
-                setCliente({
-                  nombre: newValue.nombre,
-                  telefono: newValue.telefono ?? '',
-                  email: newValue.email ?? '',
-                  nit: newValue.nit ?? '',
-                })
-                setEsClienteExistente(true)
-              }}
+              onInputChange={handleClienteInputChange}
+              onChange={handleClienteChange}
               renderInput={(params) => (
                 <TextField
                   {...params}

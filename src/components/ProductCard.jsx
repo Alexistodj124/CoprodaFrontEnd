@@ -5,7 +5,6 @@ import {
   CardActionArea,
   Box,
   Typography,
-  Chip,
   IconButton,
   Dialog,
   DialogTitle,
@@ -19,10 +18,8 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
 import { API_BASE_URL } from '../config/api'
 
-export default function ProductCard({ product, onClick, onDeleted, onUpdated }) {
+export default function ProductCard({ product, onClick, onDeleted, onUpdated, showPrice = true }) {
   const { id, descripcion, precio, cantidad, imagen } = product
-  const low = cantidad <= 5
-  const esServicio = cantidad === 9999
   const [editOpen, setEditOpen] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
   const [deleting, setDeleting] = React.useState(false)
@@ -193,14 +190,6 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
               </Typography>
             </Box>
           )}
-
-          <Box sx={{ position: 'absolute', top: 8, left: 8 }}>
-            <Chip
-              size="small"
-              label={low ? 'Bajo stock' : 'En stock'}
-              color={low ? 'warning' : 'success'}
-            />
-          </Box>
         </Box>
 
         {/* Texto */}
@@ -237,25 +226,13 @@ export default function ProductCard({ product, onClick, onDeleted, onUpdated }) 
               alignItems: 'center',
             }}
           >
-            <Typography variant="body2">
-              Q {precio.toFixed(2)}
-            </Typography>
-            {!esServicio && (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ ml: 1 }}
-              >
-                Stock: {cantidad}
+            {showPrice ? (
+              <Typography variant="body2">
+                Q {precio.toFixed(2)}
               </Typography>
-            )}
-            {esServicio && (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ ml: 1 }}
-              >
-                Stock: N/A
+            ) : (
+              <Typography variant="caption" color="text.secondary">
+                Selecciona cliente para ver precio
               </Typography>
             )}
           </Box>
