@@ -9,6 +9,7 @@ import Ventas from './pages/Ventas.jsx'
 import Compras from './pages/Compras.jsx'
 import Reportes from './pages/Reportes.jsx'
 import Clientes from './pages/Clientes.jsx'
+import Pedidos from './pages/Pedidos.jsx'
 import { RequireAuth, RequireAdmin } from './ProtectedRoutes.jsx'
 
 const router = createBrowserRouter(
@@ -57,12 +58,20 @@ const router = createBrowserRouter(
             </RequireAdmin>
           ),
         },
+        {
+          path: 'pedidos',
+          element: (
+            <RequireAdmin>
+              <Pedidos />
+            </RequireAdmin>
+          ),
+        },
         { path: '*', element: <NotFound /> },
       ],
     },
   ],
   {
-    basename: '/AMBOUTIQUE',
+    basename: '/COPRODA',
   }
 )
 
