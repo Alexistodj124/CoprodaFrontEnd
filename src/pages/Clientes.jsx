@@ -131,12 +131,20 @@ export default function Clientes() {
   const pagosPendientesCliente = React.useMemo(() => {
     const c = abonoDialog.cliente
     if (!c) return []
-    return (
+
+    const fromClient =
       c.pagosPendientes ||
       c.pagos_pendientes ||
-      c.pagos ||
-      []
-    )
+      c.pagos
+
+    if (Array.isArray(fromClient) && fromClient.length) return fromClient
+
+    // Mock data to show UI when backend no responde
+    return [
+      { id: 'mock-1', fecha: '2024-10-01', referencia: 'REF-001', cantidad: 150.0 },
+      { id: 'mock-2', fecha: '2024-10-05', referencia: 'REF-002', cantidad: 320.5 },
+      { id: 'mock-3', fecha: '2024-10-12', referencia: 'REF-003', cantidad: 80.0 },
+    ]
   }, [abonoDialog.cliente])
 
   const totalSeleccionadoAbono = React.useMemo(() => {
