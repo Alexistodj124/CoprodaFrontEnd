@@ -68,6 +68,7 @@ export default function Reportes() {
     dayjs().endOf('day'),
   ])
   const [deletingId, setDeletingId] = React.useState(null)
+  const [confirmadas, setConfirmadas] = React.useState({})
 
   const filtered = React.useMemo(() => {
   // usa SOLO backend
@@ -171,6 +172,159 @@ export default function Reportes() {
   const descuentoOrdenSel = getOrdenDescuento(ordenSel)
   const subtotalOrdenSel = calcSubtotal(ordenSel?.items || [])
   const totalOrdenSel = calcTotal(ordenSel?.items || [], descuentoOrdenSel)
+  const ordenEstaConfirmada = ordenSel ? !!confirmadas[ordenSel.id] : false
+
+  const handleConfirmOrden = () => {
+    if (!ordenSel?.id) return
+    setConfirmadas(prev => ({ ...prev, [ordenSel.id]: true }))
+  }
+
+  const handlePrintOrden = () => {
+    if (!ordenSel) return
+
+    const fmtDate = (d) => (d ? dayjs(d).format('DD/MM/YYYY HH:mm') : '')
+    const numberFmt = (n) => `Q ${Number(n || 0).toFixed(2)}`
+    const itemsRows = (ordenSel.items || []).map((it) => {
+      const nombre =
+        it.producto?.descripcion ||
+        it.servicio?.descripcion ||
+        it.nombre ||
+        `Item #${it.id}`
+      const sku = it.producto?.sku || it.codigo || ''
+      const price = getItemPrice(it)
+      const qty = getItemQty(it)
+      const subtotal = price * qty
+      return `
+        <tr>
+          <td class="center">${qty || ''}</td>
+          <td class="center">${sku || ''}</td>
+          <td>${nombre}</td>
+          <td class="center">${numberFmt(price)}</td>
+          <td class="center">${numberFmt(subtotal)}</td>
+        </tr>
+      `
+    }).join('')
+
+    const copyTypes = ['CLIENTE', 'VENTAS']
+    const fechaTexto = fmtDate(ordenSel.fecha)
+    const codigo = ordenSel.codigo ?? ordenSel.id ?? ''
+    const clienteNombre = ordenSel.cliente?.nombre ?? ''
+    const clienteTel = ordenSel.cliente?.telefono ?? ''
+    const clienteDir = ordenSel.cliente?.direccion ?? ''
+    const pago = (ordenSel.forma_pago || ordenSel.metodo_pago || ordenSel.pago || 'CONTADO').toString().toUpperCase()
+
+    const copiesHtml = copyTypes.map((tipo) => `
+      <div class="hoja">
+        <div class="encabezado">
+          <div class="logo">COPRODA</div>
+          <div class="empresa">
+            <div class="title">COMPAÑÍA PROCESADORA DE ALUMINIO, S.A.</div>
+            <div class="sub">
+              ALUMINIO DE CALIDAD QUE PERDURA<br/>
+              PRODUCTO CENTROAMERICANO HECHO EN GUATEMALA<br/>
+              KM. 32 CARRETERA AL SALVADOR, FRACCIÓN 8, SAN JOSÉ EL CHORO, PROYECTO INDUSTRIAL EL ALTO, VILLA CANALES<br/>
+              TELEFONO: 5852-8466
+            </div>
+          </div>
+          <div class="caja">
+            <div class="label">ENVIO NO.</div>
+            <div class="valor">${codigo}</div>
+            <div class="label" style="margin-top:4px;">FECHA:</div>
+            <div class="valor">${fechaTexto}</div>
+          </div>
+        </div>
+
+        <div class="folio">
+          <span>CODIGO:</span>
+          <span class="valor">${codigo}</span>
+          <span class="copy">${tipo}</span>
+        </div>
+
+        <div class="cliente">
+          <div><strong>CLIENTE:</strong> ${clienteNombre}</div>
+          <div><strong>DIRECCION:</strong> ${clienteDir || '______________________________'}</div>
+          <div><strong>TELEFONO:</strong> ${clienteTel || '________________'}</div>
+        </div>
+
+        <div class="datos">
+          <div><strong>NIT:</strong> __________</div>
+          <div><strong>PAGO:</strong> ${pago}</div>
+          <div><strong>VENCIMIENTO:</strong> __________</div>
+        </div>
+
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th width="10%">CANTIDAD</th>
+              <th width="15%">COD.PROD.</th>
+              <th>DESCRIPCION</th>
+              <th width="15%">P/UNITARIO</th>
+              <th width="15%">SUB-TOTAL</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsRows || '<tr><td colspan="5" class="center">Sin items</td></tr>'}
+          </tbody>
+        </table>
+
+        <div class="totales">
+          <div>TOTAL EN LETRAS: _________________________________</div>
+          <div class="total-box">
+            <span>TOTAL</span>
+            <span class="cantidad">${numberFmt(totalOrdenSel)}</span>
+          </div>
+        </div>
+
+        <div class="firmas">
+          <div>FIRMA DEPTO. VENTAS:</div>
+          <div>FIRMA ACEPTACION CLIENTE:</div>
+        </div>
+      </div>
+    `).join('')
+
+    const html = `
+      <html>
+        <head>
+          <title>Orden ${codigo}</title>
+          <style>
+            @page { margin: 15mm; }
+            body { font-family: 'Times New Roman', serif; font-size: 12px; margin: 0; }
+            .hoja { border: 1px solid #222; padding: 10px 12px 14px; margin-bottom: 16px; page-break-inside: avoid; }
+            .encabezado { display: grid; grid-template-columns: 80px 1fr 150px; gap: 8px; align-items: center; }
+            .logo { font-weight: 900; font-size: 18px; text-align: center; border: 2px solid #b00; color: #b00; padding: 10px 6px; border-radius: 8px; }
+            .empresa .title { font-weight: 900; text-align: center; font-size: 14px; }
+            .empresa .sub { text-align: center; font-size: 10px; line-height: 1.3; margin-top: 2px; }
+            .caja { border: 1px solid #000; padding: 6px; font-size: 11px; }
+            .caja .label { font-weight: 700; }
+            .caja .valor { border: 1px solid #000; padding: 3px 4px; text-align: center; margin-top: 2px; }
+            .folio { display: flex; align-items: center; gap: 8px; margin: 10px 0 6px; font-weight: 700; }
+            .folio .valor { padding: 2px 6px; border: 1px solid #000; }
+            .folio .copy { margin-left: auto; padding: 4px 12px; border: 1px solid #c00; font-size: 14px; font-weight: 900; }
+            .cliente { display: grid; grid-template-columns: 1fr; row-gap: 4px; margin-bottom: 8px; }
+            .datos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; font-weight: 700; }
+            .tabla { width: 100%; border-collapse: collapse; font-size: 12px; }
+            .tabla th, .tabla td { border: 1px solid #000; padding: 6px 5px; }
+            .tabla th { text-align: center; font-weight: 700; }
+            .center { text-align: center; }
+            .totales { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+            .total-box { display: flex; align-items: center; gap: 10px; border: 1px solid #000; padding: 6px 10px; font-weight: 900; }
+            .cantidad { font-size: 16px; }
+            .firmas { display: flex; justify-content: space-between; margin-top: 20px; font-weight: 700; }
+          </style>
+        </head>
+        <body>
+          ${copiesHtml}
+        </body>
+      </html>
+    `
+
+    const w = window.open('', '_blank', 'width=400,height=600')
+    if (!w) return
+    w.document.write(html)
+    w.document.close()
+    w.focus()
+    w.print()
+  }
 
   // 🔹 Cada vez que cambia el rango, pedir órdenes al backend
   React.useEffect(() => {
@@ -234,7 +388,6 @@ export default function Reportes() {
                 <TableCell>No. Orden</TableCell>
                 <TableCell>Cliente</TableCell>
                 <TableCell align="right">Total</TableCell>
-                <TableCell align="center">Acciones</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -250,19 +403,6 @@ export default function Reportes() {
                   <TableCell>{o.cliente?.nombre}</TableCell>
                   <TableCell align="right">
                     Q {calcTotal(o.items || [], getOrdenDescuento(o)).toFixed(2)}
-                  </TableCell>
-                  <TableCell align="center">
-                    <IconButton
-                      color="error"
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteOrden(o)
-                      }}
-                      disabled={deletingId === o.id}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
                   </TableCell>
                 </TableRow>
               ))}
@@ -373,6 +513,23 @@ export default function Reportes() {
             </Table>
           </DialogContent>
           <DialogActions>
+            {ordenSel && (
+              <>
+                <Button
+                  variant="contained"
+                  color={ordenEstaConfirmada ? 'success' : 'primary'}
+                  onClick={handleConfirmOrden}
+                  disabled={ordenEstaConfirmada}
+                >
+                  {ordenEstaConfirmada ? 'Confirmado' : 'Confirmar'}
+                </Button>
+                {ordenEstaConfirmada && (
+                  <Button variant="outlined" onClick={handlePrintOrden}>
+                    Imprimir
+                  </Button>
+                )}
+              </>
+            )}
             {ordenSel && (
               <Button
                 color="error"
