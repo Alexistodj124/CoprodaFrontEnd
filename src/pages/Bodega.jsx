@@ -205,7 +205,7 @@ export default function Reportes() {
       `
     }).join('')
 
-    const copyTypes = ['CONTABILIDAD', 'VENTAS']
+    const copyTypes = ['CLIENTE', 'BODEGA']
     const fechaTexto = fmtDate(ordenSel.fecha)
     const codigo = ordenSel.codigo ?? ordenSel.id ?? ''
     const clienteNombre = ordenSel.cliente?.nombre ?? ''
@@ -341,7 +341,7 @@ export default function Reportes() {
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Box sx={{ maxWidth: 1100, mx: 'auto', mt: 3 }}>
         <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
-          Pedidos
+          Bodega
         </Typography>
 
         

@@ -10,6 +10,7 @@ import Compras from './pages/Compras.jsx'
 import Reportes from './pages/Reportes.jsx'
 import Clientes from './pages/Clientes.jsx'
 import Pedidos from './pages/Pedidos.jsx'
+import Bodega from './pages/Bodega.jsx'
 import { RequireAuth, RequireAdmin } from './ProtectedRoutes.jsx'
 
 const router = createBrowserRouter(
@@ -63,6 +64,14 @@ const router = createBrowserRouter(
           element: (
             <RequireAdmin>
               <Pedidos />
+            </RequireAdmin>
+          ),
+        },
+        {
+          path: 'bodega',
+          element: (
+            <RequireAdmin>
+              <Bodega />
             </RequireAdmin>
           ),
         },

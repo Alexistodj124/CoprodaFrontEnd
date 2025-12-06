@@ -43,6 +43,9 @@ export default function AppLayout() {
               <Button color="inherit" component={RouterLink} to="/pedidos">
                 Pedidos
               </Button>
+              <Button color="inherit" component={RouterLink} to="/bodega">
+                Bodega
+              </Button>
               <Button color="inherit" component={RouterLink} to="/reportes">
                 Reportes
               </Button>
