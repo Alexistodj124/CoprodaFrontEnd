@@ -52,6 +52,9 @@ export default function AppLayout() {
               <Button color="inherit" component={RouterLink} to="/clientes">
                 Clientes
               </Button>
+              <Button color="inherit" component={RouterLink} to="/bancos">
+                Bancos
+              </Button>
 
               {/* Mostrar usuario + Logout */}
               <Typography

@@ -11,6 +11,7 @@ import Reportes from './pages/Reportes.jsx'
 import Clientes from './pages/Clientes.jsx'
 import Pedidos from './pages/Pedidos.jsx'
 import Bodega from './pages/Bodega.jsx'
+import Bancos from './pages/Bancos.jsx'
 import { RequireAuth, RequireAdmin } from './ProtectedRoutes.jsx'
 
 const router = createBrowserRouter(
@@ -75,6 +76,14 @@ const router = createBrowserRouter(
             </RequireAdmin>
           ),
         },
+        {
+          path: 'bancos',
+          element: (
+            <RequireAdmin>
+              <Bancos />
+            </RequireAdmin>
+          ),
+        },
         { path: '*', element: <NotFound /> },
       ],
     },
@@ -85,4 +94,3 @@ const router = createBrowserRouter(
 )
 
 export default router
-
