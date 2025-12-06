@@ -96,6 +96,32 @@ export default function Clientes() {
       .sort((a, b) => dayjs(b.fecha).valueOf() - dayjs(a.fecha).valueOf())
   }, [clienteSel])
 
+  const saldoCliente = React.useMemo(() => {
+    if (!clienteSel) return 0
+    const raw = clienteSel.saldo ?? clienteSel.balance ?? 0
+    const num = Number(raw)
+    return Number.isFinite(num) ? num : 0
+  }, [clienteSel])
+
+  const abonosCliente = React.useMemo(() => {
+    if (!clienteSel) return 0
+    const raw = clienteSel.abonos ?? clienteSel.total_abonos ?? 0
+    const num = Number(raw)
+    return Number.isFinite(num) ? num : 0
+  }, [clienteSel])
+
+  const diasRestantes = React.useMemo(() => {
+    if (!clienteSel) return 0
+    const raw =
+      clienteSel.dias_restantes ??
+      clienteSel.diasRestantes ??
+      clienteSel.dias_credito ??
+      clienteSel.diasCredito ??
+      0
+    const num = Number(raw)
+    return Number.isFinite(num) ? num : 0
+  }, [clienteSel])
+
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', mt: 3 }}>
       <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
@@ -182,6 +208,58 @@ export default function Clientes() {
                 {clienteSel.nit ? `NIT: ${clienteSel.nit}` : 'NIT: —'}
               </Typography>
             )}
+            {clienteSel && (
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 1.5 }}>
+                <Box
+                  sx={{
+                    flex: 1,
+                    p: 1.5,
+                    bgcolor: '#ffe5e5',
+                    border: '1px solid #e57373',
+                    borderRadius: 1,
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary">Saldo</Typography>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#c62828' }}>
+                    Q {saldoCliente.toFixed(2)}
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    flex: 1,
+                    p: 1.5,
+                    bgcolor: '#e8f5e9',
+                    border: '1px solid #81c784',
+                    borderRadius: 1,
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary">Abonos</Typography>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#2e7d32' }}>
+                    Q {abonosCliente.toFixed(2)}
+                  </Typography>
+                </Box>
+                <Box
+                  sx={{
+                    flex: 1,
+                    p: 1.5,
+                    bgcolor: diasRestantes >= 0 ? '#e8f5e9' : '#ffe5e5',
+                    border: `1px solid ${diasRestantes >= 0 ? '#81c784' : '#e57373'}`,
+                    borderRadius: 1,
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary">Días crédito</Typography>
+                  <Typography
+                    variant="subtitle1"
+                    sx={{
+                      fontWeight: 700,
+                      color: diasRestantes >= 0 ? '#2e7d32' : '#c62828',
+                    }}
+                  >
+                    {diasRestantes} días
+                  </Typography>
+                </Box>
+              </Stack>
+            )}
           </Box>
           <Table size="small">
             <TableHead>
@@ -261,7 +339,7 @@ export default function Clientes() {
                     ? `Servicio #${it.servicio_id}`
                     : `Item ${it.id}`)
 
-                const sku = it.producto.sku || ''
+                const sku = it.producto?.sku || ''
 
                 const precio = it.precio ?? it.price ?? it.precio_unitario ?? 0
                 const qty = it.cantidad ?? it.qty ?? 1
