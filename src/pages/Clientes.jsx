@@ -1,8 +1,9 @@
 import * as React from 'react'
 import {
   Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Stack, TextField, Chip, Dialog, DialogTitle, DialogContent, DialogActions, Button, Divider
+  Stack, TextField, Chip, Dialog, DialogTitle, DialogContent, DialogActions, Button, Divider, Checkbox
 } from '@mui/material'
+import AddCircleIcon from '@mui/icons-material/AddCircle'
 import dayjs from 'dayjs'
 import { API_BASE_URL } from '../config/api'
 
@@ -20,6 +21,11 @@ export default function Clientes() {
   const [ordenes, setOrdenes] = React.useState([])
   const [clienteSel, setClienteSel] = React.useState(null)   // objeto cliente agregado
   const [ordenSel, setOrdenSel] = React.useState(null)       // objeto orden para el diálogo
+  const [abonoDialog, setAbonoDialog] = React.useState({
+    open: false,
+    cliente: null,
+    selected: new Set(),
+  })
 
   // Cargar órdenes desde el backend
   React.useEffect(() => {
@@ -122,6 +128,49 @@ export default function Clientes() {
     return Number.isFinite(num) ? num : 0
   }, [clienteSel])
 
+  const pagosPendientesCliente = React.useMemo(() => {
+    const c = abonoDialog.cliente
+    if (!c) return []
+    return (
+      c.pagosPendientes ||
+      c.pagos_pendientes ||
+      c.pagos ||
+      []
+    )
+  }, [abonoDialog.cliente])
+
+  const totalSeleccionadoAbono = React.useMemo(() => {
+    if (!abonoDialog.selected || pagosPendientesCliente.length === 0) return 0
+    return pagosPendientesCliente.reduce((sum, pago) => {
+      return abonoDialog.selected.has(pago.id) ? sum + Number(pago.cantidad || 0) : sum
+    }, 0)
+  }, [abonoDialog.selected, pagosPendientesCliente])
+
+  const togglePagoSeleccion = (id) => {
+    setAbonoDialog(prev => {
+      const next = new Set(prev.selected)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return { ...prev, selected: next }
+    })
+  }
+
+  const handleOpenAbono = (cliente) => {
+    setAbonoDialog({ open: true, cliente, selected: new Set() })
+  }
+
+  const handleCerrarAbono = () => {
+    setAbonoDialog({ open: false, cliente: null, selected: new Set() })
+  }
+
+  const handleConfirmarAbono = () => {
+    console.log('Asignar abonos', {
+      cliente: abonoDialog.cliente,
+      seleccion: Array.from(abonoDialog.selected),
+    })
+    handleCerrarAbono()
+  }
+
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', mt: 3 }}>
       <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
@@ -189,78 +238,102 @@ export default function Clientes() {
           component={Paper}
           sx={{ borderRadius: 3, flex: 1, minWidth: 420 }}
         >
-          <Box sx={{ p: 2, pb: 0 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              {clienteSel ? `Órdenes de ${clienteSel.nombre}` : 'Selecciona un cliente'}
-            </Typography>
-            {clienteSel && (
-              <Typography variant="body2" color="text.secondary">
-                {clienteSel.telefono} — Total gastado: Q {clienteSel.total.toFixed(2)}
+          <Box
+            sx={{
+              p: 2,
+              pb: 0,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              gap: 1,
+            }}
+          >
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                {clienteSel ? `Órdenes de ${clienteSel.nombre}` : 'Selecciona un cliente'}
               </Typography>
-            )}
+              {clienteSel && (
+                <Typography variant="body2" color="text.secondary">
+                  {clienteSel.telefono} — Total gastado: Q {clienteSel.total.toFixed(2)}
+                </Typography>
+              )}
+              {clienteSel && (
+                <Typography variant="body2" color="text.secondary">
+                  {clienteSel.email ? `Email: ${clienteSel.email}` : 'Email: —'}
+                </Typography>
+              )}
+              {clienteSel && (
+                <Typography variant="body2" color="text.secondary">
+                  {clienteSel.nit ? `NIT: ${clienteSel.nit}` : 'NIT: —'}
+                </Typography>
+              )}
+            </Box>
             {clienteSel && (
-              <Typography variant="body2" color="text.secondary">
-                {clienteSel.email ? `Email: ${clienteSel.email}` : 'Email: —'}
-              </Typography>
-            )}
-            {clienteSel && (
-              <Typography variant="body2" color="text.secondary">
-                {clienteSel.nit ? `NIT: ${clienteSel.nit}` : 'NIT: —'}
-              </Typography>
-            )}
-            {clienteSel && (
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 1.5 }}>
-                <Box
-                  sx={{
-                    flex: 1,
-                    p: 1.5,
-                    bgcolor: '#ffe5e5',
-                    border: '1px solid #e57373',
-                    borderRadius: 1,
-                  }}
-                >
-                  <Typography variant="caption" color="text.secondary">Saldo</Typography>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#c62828' }}>
-                    Q {saldoCliente.toFixed(2)}
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    flex: 1,
-                    p: 1.5,
-                    bgcolor: '#e8f5e9',
-                    border: '1px solid #81c784',
-                    borderRadius: 1,
-                  }}
-                >
-                  <Typography variant="caption" color="text.secondary">Abonos</Typography>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#2e7d32' }}>
-                    Q {abonosCliente.toFixed(2)}
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    flex: 1,
-                    p: 1.5,
-                    bgcolor: diasRestantes >= 0 ? '#e8f5e9' : '#ffe5e5',
-                    border: `1px solid ${diasRestantes >= 0 ? '#81c784' : '#e57373'}`,
-                    borderRadius: 1,
-                  }}
-                >
-                  <Typography variant="caption" color="text.secondary">Días crédito</Typography>
-                  <Typography
-                    variant="subtitle1"
-                    sx={{
-                      fontWeight: 700,
-                      color: diasRestantes >= 0 ? '#2e7d32' : '#c62828',
-                    }}
-                  >
-                    {diasRestantes} días
-                  </Typography>
-                </Box>
-              </Stack>
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={<AddCircleIcon />}
+                onClick={() => handleOpenAbono(clienteSel)}
+                sx={{ alignSelf: 'flex-start' }}
+              >
+                Agregar abono
+              </Button>
             )}
           </Box>
+
+          {clienteSel && (
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 1.5, px: 2 }}>
+              <Box
+                sx={{
+                  flex: 1,
+                  p: 1.5,
+                  bgcolor: '#ffe5e5',
+                  border: '1px solid #e57373',
+                  borderRadius: 1,
+                }}
+              >
+                <Typography variant="caption" color="text.secondary">Saldo</Typography>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#c62828' }}>
+                  Q {saldoCliente.toFixed(2)}
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  flex: 1,
+                  p: 1.5,
+                  bgcolor: '#e8f5e9',
+                  border: '1px solid #81c784',
+                  borderRadius: 1,
+                }}
+              >
+                <Typography variant="caption" color="text.secondary">Abonos</Typography>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#2e7d32' }}>
+                  Q {abonosCliente.toFixed(2)}
+                </Typography>
+              </Box>
+              <Box
+                sx={{
+                  flex: 1,
+                  p: 1.5,
+                  bgcolor: diasRestantes >= 0 ? '#e8f5e9' : '#ffe5e5',
+                  border: `1px solid ${diasRestantes >= 0 ? '#81c784' : '#e57373'}`,
+                  borderRadius: 1,
+                }}
+              >
+                <Typography variant="caption" color="text.secondary">Días crédito</Typography>
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: 700,
+                    color: diasRestantes >= 0 ? '#2e7d32' : '#c62828',
+                  }}
+                >
+                  {diasRestantes} días
+                </Typography>
+              </Box>
+            </Stack>
+          )}
+
           <Table size="small">
             <TableHead>
               <TableRow>
@@ -290,11 +363,72 @@ export default function Clientes() {
                     </Typography>
                   </TableCell>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Stack>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Stack>
+
+      {/* -------- Dialog Abonos -------- */}
+      <Dialog open={abonoDialog.open} onClose={handleCerrarAbono} maxWidth="md" fullWidth>
+        <DialogTitle>
+          Asignar abonos {abonoDialog.cliente ? `a ${abonoDialog.cliente.nombre}` : ''}
+        </DialogTitle>
+        <DialogContent dividers>
+          {pagosPendientesCliente.length === 0 && (
+            <Typography color="text.secondary">
+              No hay pagos pendientes de asignar para este cliente.
+            </Typography>
+          )}
+          {pagosPendientesCliente.length > 0 && (
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell width="50" />
+                  <TableCell>Fecha</TableCell>
+                  <TableCell>Referencia</TableCell>
+                  <TableCell align="right">Cantidad</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {pagosPendientesCliente.map((pago) => (
+                  <TableRow key={pago.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={abonoDialog.selected.has(pago.id)}
+                        onChange={() => togglePagoSeleccion(pago.id)}
+                      />
+                    </TableCell>
+                    <TableCell>{pago.fecha || pago.created_at || '—'}</TableCell>
+                    <TableCell>{pago.referencia || pago.ref || '—'}</TableCell>
+                    <TableCell align="right">Q {Number(pago.cantidad || 0).toFixed(2)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+          {pagosPendientesCliente.length > 0 && (
+            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                Seleccionados: {abonoDialog.selected.size}
+              </Typography>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                Total a asignar: Q {totalSeleccionadoAbono.toFixed(2)}
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCerrarAbono}>Cancelar</Button>
+          <Button
+            variant="contained"
+            onClick={handleConfirmarAbono}
+            disabled={abonoDialog.selected.size === 0}
+          >
+            Confirmar abono
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* -------- Dialog Detalle de Orden -------- */}
       <Dialog open={!!ordenSel} onClose={() => setOrdenSel(null)} maxWidth="sm" fullWidth>
