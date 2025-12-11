@@ -920,11 +920,6 @@ export default function Inventory() {
                     sx={{ width: 140 }}
                   />
                 </Stack>
-                {discountValue > 0 && (
-                  <Typography variant="caption" color="text.secondary">
-                    Subtotal Q {subtotal.toFixed(2)} - Descuento Q {discountValue.toFixed(2)}
-                  </Typography>
-                )}
               </>
             ) : (
               <Typography variant="body2" color="text.secondary">

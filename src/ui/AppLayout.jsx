@@ -34,11 +34,11 @@ export default function AppLayout() {
               <Button color="inherit" component={RouterLink} to="/">
                 Inicio
               </Button>
+              <Button color="inherit" component={RouterLink} to="/compras">
+                Productos
+              </Button>
               <Button color="inherit" component={RouterLink} to="/ventas">
                 Ventas
-              </Button>
-              <Button color="inherit" component={RouterLink} to="/compras">
-                Compras
               </Button>
               <Button color="inherit" component={RouterLink} to="/pedidos">
                 Pedidos
@@ -46,14 +46,14 @@ export default function AppLayout() {
               <Button color="inherit" component={RouterLink} to="/bodega">
                 Bodega
               </Button>
-              <Button color="inherit" component={RouterLink} to="/reportes">
-                Reportes
-              </Button>
               <Button color="inherit" component={RouterLink} to="/clientes">
                 Clientes
               </Button>
               <Button color="inherit" component={RouterLink} to="/bancos">
                 Bancos
+              </Button>
+              <Button color="inherit" component={RouterLink} to="/reportes">
+                Reportes
               </Button>
 
               {/* Mostrar usuario + Logout */}
