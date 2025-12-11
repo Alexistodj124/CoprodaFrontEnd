@@ -13,13 +13,13 @@ import { API_BASE_URL } from '../config/api'
 
 export default function NuevaCompra() {
   const [producto, setProducto] = React.useState({
-    sku: '',
+    nombre: '',
+    codigo: '',
     categoriaId: '',
-    descripcion: '',
     precioCF: 0,
     precioMinorista: 0,
     precioMayorista: 0,
-    imagen: '',
+    foto: '',
   })
 
 
@@ -45,10 +45,10 @@ export default function NuevaCompra() {
 
   const cargarCategoriasProductos = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/categorias-productos`)
+      const res = await fetch(`${API_BASE_URL}/categorias_producto`)
       if (!res.ok) throw new Error('Error al obtener categorías de productos')
       const data = await res.json()
-      // data viene como array de objetos { id, nombre, descripcion, activo }
+      // data viene como array de objetos { id, nombre, descripcion, creada_en, actualizada_en }
       setCategoriasProductos(data)
     } catch (err) {
       console.error(err)
@@ -72,7 +72,7 @@ export default function NuevaCompra() {
     if (!nombre) return
 
     try {
-      const res = await fetch(`${API_BASE_URL}/categorias-productos`, {
+      const res = await fetch(`${API_BASE_URL}/categorias_producto`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -82,7 +82,14 @@ export default function NuevaCompra() {
 
       if (!res.ok) {
         const errText = await res.text()
-        console.error('Error creando categoría de producto:', errText)
+        let msg = 'Error creando categoría de producto'
+        try {
+          const parsed = JSON.parse(errText)
+          msg = parsed.error || msg
+        } catch (_) {
+          // noop
+        }
+        setSnack({ open: true, msg, severity: 'error' })
         return
       }
 
@@ -112,7 +119,7 @@ export default function NuevaCompra() {
       const reader = new FileReader()
       reader.onload = () => {
         setPreview(reader.result)
-        setProducto((prev) => ({ ...prev, imagen: reader.result }))
+        setProducto((prev) => ({ ...prev, foto: reader.result }))
       }
       reader.readAsDataURL(file)
     }
@@ -125,14 +132,26 @@ export default function NuevaCompra() {
     setMensajeExito('')
 
     try {
+      const nombre = producto.nombre.trim()
+      const codigo = producto.codigo.trim()
+      if (!nombre || !codigo || !producto.categoriaId) {
+        setSnack({
+          open: true,
+          msg: 'Nombre, código y categoría son requeridos',
+          severity: 'error',
+        })
+        setLoading(false)
+        return
+      }
+
       const body = {
-        sku: producto.sku || null,
+        nombre,
+        codigo,
         categoria_id: producto.categoriaId ? Number(producto.categoriaId) : null,
-        descripcion: producto.descripcion,
         precio_cf: Number(producto.precioCF) || 0,
         precio_minorista: Number(producto.precioMinorista) || 0,
         precio_mayorista: Number(producto.precioMayorista) || 0,
-        imagen: producto.imagen || null,
+        foto: producto.foto || null,
       }
 
 
@@ -144,8 +163,15 @@ export default function NuevaCompra() {
 
       if (!res.ok) {
         const errText = await res.text()
-        console.error('Error backend:', errText)
-        throw new Error('Error al crear producto')
+        let msg = 'Error al crear producto'
+        try {
+          const parsed = JSON.parse(errText)
+          msg = parsed.error || msg
+        } catch (_) {
+          // noop
+        }
+        setSnack({ open: true, msg, severity: 'error' })
+        throw new Error(msg)
       }
 
       const data = await res.json()
@@ -153,13 +179,13 @@ export default function NuevaCompra() {
 
       // 🔹 limpiar formulario
       const initialProducto = {
-        sku: '',
+        nombre: '',
+        codigo: '',
         categoriaId: '',
-        descripcion: '',
         precioCF: 0,
         precioMinorista: 0,
         precioMayorista: 0,
-        imagen: '',
+        foto: '',
       }
       setProducto(initialProducto)
 
@@ -235,26 +261,26 @@ export default function NuevaCompra() {
               </Button>
             </Box>
 
-            {/* SKU / Código de barras */}
+            {/* Nombre */}
             <TextField
-              label="SKU / Código de barras"
+              label="Nombre del producto"
               fullWidth
-              value={producto.sku}
+              value={producto.nombre}
               onChange={(e) =>
-                setProducto((p) => ({ ...p, sku: e.target.value }))
+                setProducto((p) => ({ ...p, nombre: e.target.value }))
               }
+              required
             />
 
-            {/* Descripción */}
+            {/* Código / SKU */}
             <TextField
-              label="Descripción"
-              multiline
-              minRows={3}
+              label="Código / SKU"
               fullWidth
-              value={producto.descripcion}
+              value={producto.codigo}
               onChange={(e) =>
-                setProducto((p) => ({ ...p, descripcion: e.target.value }))
+                setProducto((p) => ({ ...p, codigo: e.target.value }))
               }
+              required
             />
 
             {/* Categoría + botón agregar */}
@@ -326,7 +352,7 @@ export default function NuevaCompra() {
               }
             />
 
-            <Button variant="contained" color="primary" type="submit">
+            <Button variant="contained" color="primary" type="submit" disabled={loading}>
               Guardar
             </Button>
           </Stack>
