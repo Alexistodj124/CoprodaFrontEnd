@@ -107,6 +107,7 @@ const formatTicketDate = (date) => {
 
 
 export default function Inventory() {
+  const DEFAULT_ESTADO_ID = 1
   const getPrecioForCliente = (product, clasificacion) => {
     if (!product) return 0
     const toNumber = (value) => {
@@ -134,7 +135,6 @@ export default function Inventory() {
   const [tipoPOSset, setTipoPOS] = React.useState('all')
   const [category, setCategory] = React.useState('all')
   const [cart, setCart] = React.useState([])
-  const [discount, setDiscount] = React.useState('')
   const [qtyDialog, setQtyDialog] = React.useState({
     open: false,
     product: null,
@@ -488,12 +488,6 @@ export default function Inventory() {
   const removeFromCart = (id) => setCart(prev => prev.filter(p => p.id !== id))
 
   const subtotal = cart.reduce((sum, p) => sum + p.precio * p.qty, 0)
-  const discountValue = React.useMemo(() => {
-    const parsed = parseFloat(discount)
-    if (Number.isNaN(parsed) || parsed < 0) return 0
-    return Math.min(parsed, subtotal)
-  }, [discount, subtotal])
-  const totalWithDiscount = subtotal - discountValue
 
   const handleOpenCheckout = () => {
     if (cart.length === 0) {
@@ -532,6 +526,10 @@ export default function Inventory() {
       setSnack({ open: true, msg: 'Tu carrito está vacío', severity: 'warning' })
       return
     }
+    if (!clienteSeleccionado?.id) {
+      setSnack({ open: true, msg: 'Selecciona un cliente existente', severity: 'warning' })
+      return
+    }
 
     // 0) Abrimos la ventana de impresión AQUÍ (gesto de usuario)
     const printWindow = window.open('', '', 'width=400,height=600')
@@ -539,41 +537,30 @@ export default function Inventory() {
     // Igual seguimos con la creación de la orden; sólo que no imprimirá.
 
     // 1) Cliente: existente o nuevo
-    let clientePayload
-    const nombreTrim = (cliente.nombre || '').trim()
-    const telTrim = (cliente.telefono || '').trim()
-    const emailTrim = (cliente.email || '').trim()
-    const nitTrim = (cliente.nit || '').trim()
-
-    if (esClienteExistente && clienteSeleccionado?.id) {
-      clientePayload = {
-        id: clienteSeleccionado.id,
-        email: emailTrim || clienteSeleccionado.email || null,
-        nit: nitTrim || clienteSeleccionado.nit || null,
+    const tipoPagoSeleccionado = tipoPago.find((item) => item.nombre === venta.pago)
+    if (!tipoPagoSeleccionado?.id) {
+      setSnack({ open: true, msg: 'Selecciona un tipo de pago válido', severity: 'warning' })
+      if (printWindow && !printWindow.closed) {
+        printWindow.close()
       }
-    } else {
-      clientePayload = {
-        nombre: nombreTrim,
-        telefono: telTrim,
-        email: emailTrim || null,
-        nit: nitTrim || null,
-      }
+      return
     }
 
     // 2) Items (solo productos)
     const itemsPayload = cart.map((item) => ({
       producto_id: item.id,
       cantidad: item.qty,
-      precio_unitario: Number(item.precio),
+      precio: Number(item.precio),
     }))
 
     // 3) Body para /ordenes
     const body = {
-      codigo: `ORD-${Date.now()}`,
-      cliente: clientePayload,
+      fecha: new Date().toISOString(),
+      tipo_pago_id: tipoPagoSeleccionado.id,
+      estado_id: DEFAULT_ESTADO_ID,
+      cliente_id: clienteSeleccionado.id,
       items: itemsPayload,
-      descuento: discountValue,
-      total: totalWithDiscount,
+      total: subtotal,
     }
 
     console.log('Payload para /ordenes:', body)
@@ -605,7 +592,7 @@ export default function Inventory() {
       console.log('Orden creada en backend:', data)
 
       // ==== Construimos el HTML del ticket ====
-      const ticketCodigo = data.codigo || body.codigo
+      const ticketCodigo = data.codigo || data.id || `ORD-${Date.now()}`
       const ticketFecha = parseTicketDate(
         data.fecha,
         data.fecha_creacion,
@@ -616,17 +603,11 @@ export default function Inventory() {
       )
       const ticketFechaTexto = formatTicketDate(ticketFecha)
 
-      const ticketClienteNombre   = clientePayload.nombre ?? clienteSeleccionado?.nombre ?? ''
-      const ticketClienteTelefono = clientePayload.telefono ?? clienteSeleccionado?.telefono ?? ''
+      const ticketClienteNombre = clienteSeleccionado?.nombre ?? ''
+      const ticketClienteTelefono = clienteSeleccionado?.telefono ?? ''
 
       const subtotalTicket = cart.reduce((sum, it) => sum + it.precio * it.qty, 0)
-      const discountApplied = Math.min(
-        Math.max(parseFloat(discount) || 0, 0),
-        subtotalTicket
-      )
-      const totalConDescuento = subtotalTicket - discountApplied
-      const discountFromBackend = typeof data.descuento === 'number' ? data.descuento : discountApplied
-      const totalFromBackend = typeof data.total === 'number' ? data.total : totalConDescuento
+      const totalFromBackend = typeof data.total === 'number' ? data.total : subtotalTicket
 
       const itemsHtml = cart.map(it => `
         <div style="margin-bottom:3px">
@@ -685,12 +666,6 @@ export default function Inventory() {
                 <span>Total</span>
                 <span>Q ${totalFromBackend.toFixed(2)}</span>
               </div>
-              ${discountFromBackend > 0
-                ? `<div style="display:flex;justify-content:space-between;font-size:10px;margin-top:4px">
-                    <span>Descuento</span>
-                    <span>-Q ${discountFromBackend.toFixed(2)}</span>
-                  </div>`
-                : ''}
               <div style="text-align:center;margin-top:6px">
                 ¡Gracias por su compra!
               </div>
@@ -721,7 +696,6 @@ export default function Inventory() {
       setClienteSeleccionado(null)
       setEsClienteExistente(false)
       setCart([])
-      setDiscount('')
 
     } catch (err) {
       console.error('Error de red al crear orden:', err)
@@ -969,22 +943,9 @@ export default function Inventory() {
         <Box sx={{ textAlign: 'right' }}>
           <Stack spacing={1} alignItems="flex-end">
             {hasClienteSeleccionado ? (
-              <>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                    Total: Q {totalWithDiscount.toFixed(2)}
-                  </Typography>
-                  <TextField
-                    size="small"
-                    label="Descuento"
-                    value={discount}
-                    onChange={(e) => setDiscount(e.target.value)}
-                    type="number"
-                    inputProps={{ min: 0, step: '0.01' }}
-                    sx={{ width: 140 }}
-                  />
-                </Stack>
-              </>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                Total: Q {subtotal.toFixed(2)}
+              </Typography>
             ) : (
               <Typography variant="body2" color="text.secondary">
                 Selecciona un cliente para ver precios y totales
