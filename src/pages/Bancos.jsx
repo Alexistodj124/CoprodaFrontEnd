@@ -6,6 +6,7 @@ import {
   Stack,
   TextField,
   Button,
+  MenuItem,
   Table,
   TableHead,
   TableBody,
@@ -15,13 +16,14 @@ import {
 } from '@mui/material'
 
 const seedPagos = [
-  { id: 'mock-1', fecha: '2024-10-01', referencia: 'DEP-001', banco: 'BANTRAB', monto: 150.0, nota: 'Depósito en ventanilla' },
-  { id: 'mock-2', fecha: '2024-10-05', referencia: 'TRF-842', banco: 'BAC', monto: 320.5, nota: 'Transferencia cliente contado' },
-  { id: 'mock-3', fecha: '2024-10-12', referencia: 'CHK-554', banco: 'G&T', monto: 80.0, nota: 'Cheque' },
+  { id: 'mock-1', fecha: '2024-10-01', referencia: 'DEP-001', banco: 'BANTRAB', monto: 150.0, nota: 'Deposito en ventanilla', asignado: false },
+  { id: 'mock-2', fecha: '2024-10-05', referencia: 'TRF-842', banco: 'BAC', monto: 320.5, nota: 'Transferencia cliente contado', asignado: true },
+  { id: 'mock-3', fecha: '2024-10-12', referencia: 'CHK-554', banco: 'G&T', monto: 80.0, nota: 'Cheque', asignado: false },
 ]
 
 export default function Bancos() {
   const [pagos, setPagos] = React.useState(seedPagos)
+  const [filtroAsignado, setFiltroAsignado] = React.useState('todos')
   const [form, setForm] = React.useState({
     fecha: new Date().toISOString().slice(0, 10),
     referencia: '',
@@ -43,6 +45,7 @@ export default function Bancos() {
       banco: form.banco.trim(),
       monto: Number(form.monto) || 0,
       nota: form.nota.trim(),
+      asignado: false,
     }
     setPagos((prev) => [nuevo, ...prev])
     setForm((prev) => ({
@@ -54,12 +57,22 @@ export default function Bancos() {
     }))
   }
 
-  const total = pagos.reduce((s, p) => s + (Number(p.monto) || 0), 0)
+  const pagosFiltrados = React.useMemo(() => {
+    if (filtroAsignado === 'asignado') {
+      return pagos.filter((p) => p.asignado)
+    }
+    if (filtroAsignado === 'no-asignado') {
+      return pagos.filter((p) => !p.asignado)
+    }
+    return pagos
+  }, [pagos, filtroAsignado])
+
+  const total = pagosFiltrados.reduce((s, p) => s + (Number(p.monto) || 0), 0)
 
   return (
     <Box sx={{ maxWidth: 1100, mx: 'auto', mt: 3 }}>
       <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
-        Bancos — Pagos sin asignar
+        Bancos — Pagos
       </Typography>
 
       <Paper sx={{ p: 2, borderRadius: 3, mb: 2 }}>
@@ -116,11 +129,25 @@ export default function Bancos() {
       <Paper sx={{ p: 2, borderRadius: 3 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-            Pagos pendientes de asignar
+            Todos los pagos
           </Typography>
-          <Typography variant="subtitle2" color="text.secondary">
-            Total: Q {total.toFixed(2)}
-          </Typography>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <TextField
+              select
+              label="Filtro"
+              value={filtroAsignado}
+              onChange={(e) => setFiltroAsignado(e.target.value)}
+              size="small"
+              sx={{ minWidth: 170 }}
+            >
+              <MenuItem value="todos">Todos</MenuItem>
+              <MenuItem value="asignado">Asignado</MenuItem>
+              <MenuItem value="no-asignado">No asignado</MenuItem>
+            </TextField>
+            <Typography variant="subtitle2" color="text.secondary">
+              Total: Q {total.toFixed(2)}
+            </Typography>
+          </Stack>
         </Stack>
         <Divider sx={{ mb: 1 }} />
         <Table size="small">
@@ -130,22 +157,37 @@ export default function Bancos() {
               <TableCell>Referencia</TableCell>
               <TableCell>Banco</TableCell>
               <TableCell>Nota</TableCell>
+              <TableCell>Asignado</TableCell>
               <TableCell align="right">Monto (Q)</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {pagos.map((p) => (
-              <TableRow key={p.id}>
+            {pagosFiltrados.map((p) => (
+              <TableRow
+                key={p.id}
+                sx={{
+                  backgroundColor: p.asignado ? '#dff4e4' : '#f9dede',
+                  color: 'text.primary',
+                }}
+              >
                 <TableCell>{p.fecha}</TableCell>
                 <TableCell>{p.referencia}</TableCell>
                 <TableCell>{p.banco || '—'}</TableCell>
                 <TableCell>{p.nota || '—'}</TableCell>
+                <TableCell
+                  sx={{
+                    color: p.asignado ? 'success.main' : 'error.main',
+                    fontWeight: 600,
+                  }}
+                >
+                  {p.asignado ? 'Si' : 'No'}
+                </TableCell>
                 <TableCell align="right">Q {(Number(p.monto) || 0).toFixed(2)}</TableCell>
               </TableRow>
             ))}
-            {pagos.length === 0 && (
+            {pagosFiltrados.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5}>
+                <TableCell colSpan={6}>
                   <Typography align="center" color="text.secondary">
                     No hay pagos registrados.
                   </Typography>
