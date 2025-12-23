@@ -107,6 +107,30 @@ const formatTicketDate = (date) => {
 
 
 export default function Inventory() {
+  const getPrecioForCliente = (product, clasificacion) => {
+    if (!product) return 0
+    const toNumber = (value) => {
+      const num = Number(value)
+      return Number.isFinite(num) ? num : 0
+    }
+
+    switch ((clasificacion || '').toLowerCase()) {
+      case 'cf':
+        return toNumber(product.precio_cf ?? product.precio)
+      case 'mayorista':
+        return toNumber(product.precio_mayorista ?? product.precio)
+      case 'minorista':
+        return toNumber(product.precio_minorista ?? product.precio)
+      default:
+        return toNumber(
+          product.precio_cf ??
+          product.precio_minorista ??
+          product.precio_mayorista ??
+          product.precio
+        )
+    }
+  }
+
   const [tipoPOSset, setTipoPOS] = React.useState('all')
   const [category, setCategory] = React.useState('all')
   const [cart, setCart] = React.useState([])
@@ -137,6 +161,7 @@ export default function Inventory() {
   const hasClienteSeleccionado = Boolean(
     clienteSeleccionado || (cliente.nombre && cliente.nombre.trim())
   )
+  const clasificacionSeleccionada = clienteSeleccionado?.clasificacion_precio || ''
 
   const [categoria, setCategoria] = React.useState('')
   const [marca, setMarca] = React.useState('')
@@ -155,10 +180,18 @@ export default function Inventory() {
   //   if (categoriasProductos.id === 'all') return productos
   //   return productos.filter(p => p.categoria_id === categoriasProductos.id)
   // }, [categoriasProductos.id])
+  const productosConPrecio = React.useMemo(() => (
+    productos.map((p) => ({
+      ...p,
+      descripcion: p.descripcion ?? p.nombre ?? '',
+      precio: getPrecioForCliente(p, clasificacionSeleccionada),
+    }))
+  ), [productos, clasificacionSeleccionada])
+
   const filtered = React.useMemo(() => {
     const skuQ = skuQuery.trim().toLowerCase()
 
-    return productos.filter((p) => {
+    return productosConPrecio.filter((p) => {
       // Marca
       if (marca && String(p.marca_id) !== String(marca.id)) {
         return false
@@ -176,7 +209,7 @@ export default function Inventory() {
 
       // SKU (buscar por texto parcial)
       if (skuQ) {
-        const sku = (p.sku || '').toLowerCase()
+        const sku = (p.sku || p.codigo || '').toLowerCase()
         if (!sku.includes(skuQ)) {
           return false
         }
@@ -184,7 +217,7 @@ export default function Inventory() {
 
       return true
     })
-  }, [productos, marca, categoria, talla, skuQuery])
+  }, [productosConPrecio, marca, categoria, talla, skuQuery])
 
 
 
@@ -240,6 +273,24 @@ export default function Inventory() {
       if (!res.ok) throw new Error('Error al obtener clientes')
       const data = await res.json()
       setClientes(data) // array de { id, nombre, descripcion, activo }
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const cargarClientePorId = async (id) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/clientes/${id}`)
+      if (!res.ok) throw new Error('Error al obtener cliente')
+      const data = await res.json()
+      setClienteSeleccionado(data)
+      setCliente({
+        nombre: data.nombre ?? '',
+        telefono: data.telefono ?? '',
+        email: data.email ?? '',
+        nit: data.nit ?? '',
+      })
+      setEsClienteExistente(true)
     } catch (err) {
       console.error(err)
     }
@@ -411,6 +462,9 @@ export default function Inventory() {
       nit: newValue.nit ?? '',
     })
     setEsClienteExistente(true)
+    if (newValue.id) {
+      cargarClientePorId(newValue.id)
+    }
   }
 
   const handleConfirmQty = () => {
@@ -691,6 +745,16 @@ export default function Inventory() {
       cargarMarcas()
       cargarTallas()
     }, [])
+
+  React.useEffect(() => {
+    if (!clasificacionSeleccionada) return
+    setCart((prev) => (
+      prev.map((item) => ({
+        ...item,
+        precio: getPrecioForCliente(item, clasificacionSeleccionada),
+      }))
+    ))
+  }, [clasificacionSeleccionada])
   return (
     <Box sx={{ display: 'flex', gap: 2 }}>
       {/* -------- IZQUIERDA: INVENTARIO -------- */}
