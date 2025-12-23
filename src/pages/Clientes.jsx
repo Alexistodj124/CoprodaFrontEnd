@@ -1,9 +1,10 @@
 import * as React from 'react'
 import {
   Box, Paper, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Stack, TextField, Chip, Dialog, DialogTitle, DialogContent, DialogActions, Button, Divider, Checkbox
+  Stack, TextField, Chip, Dialog, DialogTitle, DialogContent, DialogActions, Button, Divider, Checkbox, MenuItem
 } from '@mui/material'
 import AddCircleIcon from '@mui/icons-material/AddCircle'
+import PersonAddAltIcon from '@mui/icons-material/PersonAddAlt'
 import dayjs from 'dayjs'
 import { API_BASE_URL } from '../config/api'
 
@@ -26,6 +27,17 @@ export default function Clientes() {
     cliente: null,
     selected: new Set(),
   })
+  const [clienteDialog, setClienteDialog] = React.useState({
+    open: false,
+    codigo: '',
+    nombre: '',
+    telefono: '',
+    direccion: '',
+    clasificacion: 'cf',
+    loading: false,
+    error: '',
+  })
+  const [clientesCreados, setClientesCreados] = React.useState([])
 
   // Cargar órdenes desde el backend
   React.useEffect(() => {
@@ -78,6 +90,22 @@ export default function Clientes() {
       }
     }
 
+    // Agregar clientes creados manualmente (sin órdenes aún)
+    for (const cli of clientesCreados) {
+      if (!cli.id) continue
+      if (map.has(cli.id)) continue
+      map.set(cli.id, {
+        id: cli.id,
+        nombre: cli.nombre,
+        telefono: cli.telefono,
+        email: cli.email,
+        nit: cli.nit,
+        ordenes: [],
+        total: 0,
+        ultima: cli.creado_en || cli.actualizado_en || new Date().toISOString(),
+      })
+    }
+
     let arr = Array.from(map.values())
 
     // filtro por texto (nombre o teléfono)
@@ -89,10 +117,14 @@ export default function Clientes() {
       )
     }
 
-    // ordenar por última compra desc
-    arr.sort((a, b) => dayjs(b.ultima).valueOf() - dayjs(a.ultima).valueOf())
+    // ordenar por última compra desc (clientes sin fecha se van al final)
+    arr.sort((a, b) => {
+      const aDate = a.ultima ? dayjs(a.ultima).valueOf() : -Infinity
+      const bDate = b.ultima ? dayjs(b.ultima).valueOf() : -Infinity
+      return bDate - aDate
+    })
     return arr
-  }, [ordenes, query])
+  }, [ordenes, query, clientesCreados])
 
   // Órdenes del cliente seleccionado
   const ordenesCliente = React.useMemo(() => {
@@ -179,6 +211,88 @@ export default function Clientes() {
     handleCerrarAbono()
   }
 
+  const handleOpenClienteDialog = () => {
+    setClienteDialog({
+      open: true,
+      codigo: '',
+      nombre: '',
+      telefono: '',
+      direccion: '',
+      clasificacion: 'cf',
+      loading: false,
+      error: '',
+    })
+  }
+
+  const handleCloseClienteDialog = () => {
+    setClienteDialog((prev) => ({ ...prev, open: false, loading: false }))
+  }
+
+  const handleCrearCliente = async (e) => {
+    e?.preventDefault()
+    setClienteDialog((prev) => ({ ...prev, loading: true, error: '' }))
+
+    const codigo = (clienteDialog.codigo || '').trim()
+    const nombre = (clienteDialog.nombre || '').trim()
+    const telefono = clienteDialog.telefono.trim() || null
+    const direccion = clienteDialog.direccion.trim() || null
+    const clasificacion_precio = clienteDialog.clasificacion
+
+    if (!codigo || !nombre) {
+      setClienteDialog((prev) => ({
+        ...prev,
+        loading: false,
+        error: 'Código y nombre son requeridos',
+      }))
+      return
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/clientes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          codigo,
+          nombre,
+          telefono,
+          direccion,
+          clasificacion_precio,
+        }),
+      })
+
+      if (!res.ok) {
+        const txt = await res.text()
+        let msg = 'No se pudo crear el cliente'
+        try {
+          const parsed = JSON.parse(txt)
+          msg = parsed.error || msg
+        } catch (_) {
+          // noop
+        }
+        setClienteDialog((prev) => ({ ...prev, loading: false, error: msg }))
+        return
+      }
+
+      const data = await res.json()
+      const nuevoCliente = {
+        ...data,
+        ordenes: [],
+        total: 0,
+        ultima: data.creado_en || new Date().toISOString(),
+      }
+      setClientesCreados((prev) => [...prev, nuevoCliente])
+      setClienteSel(nuevoCliente)
+      handleCloseClienteDialog()
+    } catch (err) {
+      console.error('Error creando cliente:', err)
+      setClienteDialog((prev) => ({
+        ...prev,
+        loading: false,
+        error: 'Error de red al crear el cliente',
+      }))
+    }
+  }
+
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', mt: 3 }}>
       <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
@@ -187,7 +301,7 @@ export default function Clientes() {
 
       {/* Filtros / búsqueda */}
       <Paper sx={{ p: 2, borderRadius: 3, mb: 2 }}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }}>
           <TextField
             label="Buscar cliente (nombre o teléfono)"
             size="small"
@@ -195,7 +309,16 @@ export default function Clientes() {
             onChange={(e) => setQuery(e.target.value)}
             fullWidth
           />
-          <Chip label={`Clientes: ${clientes.length}`} />
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Chip label={`Clientes: ${clientes.length}`} />
+            <Button
+              variant="contained"
+              startIcon={<PersonAddAltIcon />}
+              onClick={handleOpenClienteDialog}
+            >
+              Nuevo cliente
+            </Button>
+          </Stack>
         </Stack>
       </Paper>
 
@@ -224,8 +347,8 @@ export default function Clientes() {
                   <TableCell>{c.nombre}</TableCell>
                   <TableCell>{c.telefono}</TableCell>
                   <TableCell align="right">{c.ordenes.length}</TableCell>
-                  <TableCell align="right">Q {c.total.toFixed(2)}</TableCell>
-                  <TableCell>{dayjs(c.ultima).format('YYYY-MM-DD HH:mm')}</TableCell>
+                  <TableCell align="right">Q {Number(c.total || 0).toFixed(2)}</TableCell>
+                  <TableCell>{c.ultima ? dayjs(c.ultima).format('YYYY-MM-DD HH:mm') : '—'}</TableCell>
                 </TableRow>
               ))}
               {clientes.length === 0 && (
@@ -511,6 +634,69 @@ export default function Clientes() {
         <DialogActions>
           <Button onClick={() => setOrdenSel(null)}>Cerrar</Button>
         </DialogActions>
+      </Dialog>
+
+      {/* -------- Dialog Nuevo Cliente -------- */}
+      <Dialog open={clienteDialog.open} onClose={handleCloseClienteDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>Nuevo cliente</DialogTitle>
+        <form onSubmit={handleCrearCliente}>
+          <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Código"
+              value={clienteDialog.codigo}
+              onChange={(e) => setClienteDialog((prev) => ({ ...prev, codigo: e.target.value }))}
+              required
+            />
+            <TextField
+              label="Nombre"
+              value={clienteDialog.nombre}
+              onChange={(e) => setClienteDialog((prev) => ({ ...prev, nombre: e.target.value }))}
+              required
+            />
+            <TextField
+              label="Teléfono"
+              value={clienteDialog.telefono}
+              onChange={(e) => setClienteDialog((prev) => ({ ...prev, telefono: e.target.value }))}
+            />
+            <TextField
+              label="Dirección"
+              value={clienteDialog.direccion}
+              onChange={(e) => setClienteDialog((prev) => ({ ...prev, direccion: e.target.value }))}
+              multiline
+              minRows={2}
+            />
+            <TextField
+              select
+              label="Clasificación de precio"
+              value={clienteDialog.clasificacion}
+              onChange={(e) =>
+                setClienteDialog((prev) => ({ ...prev, clasificacion: e.target.value }))
+              }
+            >
+              <MenuItem value="cf">CF</MenuItem>
+              <MenuItem value="minorista">Minorista</MenuItem>
+              <MenuItem value="mayorista">Mayorista</MenuItem>
+            </TextField>
+            {clienteDialog.error && (
+              <Typography variant="body2" color="error">
+                {clienteDialog.error}
+              </Typography>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseClienteDialog} disabled={clienteDialog.loading}>
+              Cancelar
+            </Button>
+            <Button
+              variant="contained"
+              type="submit"
+              startIcon={<PersonAddAltIcon />}
+              disabled={clienteDialog.loading}
+            >
+              Guardar
+            </Button>
+          </DialogActions>
+        </form>
       </Dialog>
     </Box>
   )
