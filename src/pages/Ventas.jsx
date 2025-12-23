@@ -148,8 +148,6 @@ export default function Inventory() {
   const [errors, setErrors] = React.useState({ nombre: '', telefono: '' })
 
   const [categoriasProductos, setCategoriasProductos] = React.useState([])
-  const [marcasProductos, setMarcasProductos] = React.useState([])
-  const [tallasProductos, setTallasProductos] = React.useState([])
   const [categoriasServicios, setCategoriasServicios] = React.useState([])
   const [productos, setProductos] = React.useState([])
   const [empleadas, setEmpleadas] = React.useState([])
@@ -164,8 +162,6 @@ export default function Inventory() {
   const clasificacionSeleccionada = clienteSeleccionado?.clasificacion_precio || ''
 
   const [categoria, setCategoria] = React.useState('')
-  const [marca, setMarca] = React.useState('')
-  const [talla, setTalla] = React.useState('')
   const [skuQuery, setSkuQuery] = React.useState('')
   
 
@@ -192,18 +188,8 @@ export default function Inventory() {
     const skuQ = skuQuery.trim().toLowerCase()
 
     return productosConPrecio.filter((p) => {
-      // Marca
-      if (marca && String(p.marca_id) !== String(marca.id)) {
-        return false
-      }
-
       // Categoría
       if (categoria && String(p.categoria_id) !== String(categoria.id)) {
-        return false
-      }
-
-      // Talla
-      if (talla && String(p.talla_id) !== String(talla.id)) {
         return false
       }
 
@@ -217,7 +203,7 @@ export default function Inventory() {
 
       return true
     })
-  }, [productosConPrecio, marca, categoria, talla, skuQuery])
+  }, [productosConPrecio, categoria, skuQuery])
 
 
 
@@ -246,7 +232,7 @@ export default function Inventory() {
 
   const cargarCategoriasProductos = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/categorias-productos`)
+      const res = await fetch(`${API_BASE_URL}/categorias_producto`)
       if (!res.ok) throw new Error('Error al obtener clientes')
       const data = await res.json()
       setCategoriasProductos(data) // array de { id, nombre, descripcion, activo }
@@ -291,28 +277,6 @@ export default function Inventory() {
         nit: data.nit ?? '',
       })
       setEsClienteExistente(true)
-    } catch (err) {
-      console.error(err)
-    }
-  }
-
-  const cargarMarcas = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/marcas-productos`)
-      if (!res.ok) throw new Error('Error al obtener clientes')
-      const data = await res.json()
-      setMarcasProductos(data) // array de { id, nombre, descripcion, activo }
-    } catch (err) {
-      console.error(err)
-    }
-  }
-
-  const cargarTallas = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/tallas`)
-      if (!res.ok) throw new Error('Error al obtener clientes')
-      const data = await res.json()
-      setTallasProductos(data) // array de { id, nombre, descripcion, activo }
     } catch (err) {
       console.error(err)
     }
@@ -716,8 +680,6 @@ export default function Inventory() {
       cargarCategoriasProductos()
       cargarProductos()
       cargarClientes()
-      cargarMarcas()
-      cargarTallas()
     }, [])
 
   React.useEffect(() => {
@@ -742,22 +704,6 @@ export default function Inventory() {
           spacing={2}
           sx={{ mb: 2 }}
         >
-          {/* Marca */}
-          <Autocomplete
-            size="small"
-            fullWidth
-            options={marcasProductos}
-            value={marca}
-            onChange={(_, newValue) => setMarca(newValue)}
-            getOptionLabel={(option) =>
-              typeof option === 'string' ? option : option?.nombre || ''
-            }
-            isOptionEqualToValue={(opt, val) => opt.id === val.id}
-            renderInput={(params) => (
-              <TextField {...params} label="Filtrar por marca" placeholder="Marca" />
-            )}
-          />
-
           {/* Categoría */}
           <Autocomplete
             size="small"
@@ -771,22 +717,6 @@ export default function Inventory() {
             isOptionEqualToValue={(opt, val) => opt.id === val.id}
             renderInput={(params) => (
               <TextField {...params} label="Filtrar por categoría" placeholder="Categoría" />
-            )}
-          />
-
-          {/* Talla */}
-          <Autocomplete
-            size="small"
-            fullWidth
-            options={tallasProductos}
-            value={talla}
-            onChange={(_, newValue) => setTalla(newValue)}
-            getOptionLabel={(option) =>
-              typeof option === 'string' ? option : option?.nombre || ''
-            }
-            isOptionEqualToValue={(opt, val) => opt.id === val.id}
-            renderInput={(params) => (
-              <TextField {...params} label="Filtrar por talla" placeholder="Talla" />
             )}
           />
         </Stack>
