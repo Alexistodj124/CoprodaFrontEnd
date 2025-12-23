@@ -34,11 +34,24 @@ const empleadas = [
   { id: 3, nombre: 'Lucía' },
 ]
 
-const tipoPago = [
-  { id: 1, nombre: 'Efectivo' },
-  { id: 2, nombre: 'Tarjeta' },
-  { id: 3, nombre: 'Transferencia' },
+const TIPO_PAGO_GRUPOS = [
+  { id: 'credito', label: 'Crédito' },
+  { id: 'contado', label: 'Contado' },
 ]
+
+const TIPO_PAGO_DETALLES = {
+  credito: [
+    { id: 1, label: '7 días' },
+    { id: 2, label: '15 días' },
+    { id: 3, label: '22 días' },
+    { id: 4, label: '30 días' },
+  ],
+  contado: [
+    { id: 5, label: 'Efectivo' },
+    { id: 6, label: 'Transferencia' },
+    { id: 7, label: 'Cheque' },
+  ],
+}
 
 const tipoPOS = [
   { id: 'all', label: 'Todo' },
@@ -144,7 +157,12 @@ export default function Inventory() {
 
   // Dialog de datos del cliente
   const [openDialog, setOpenDialog] = React.useState(false)
-  const [venta, setVenta] = React.useState({ empleada: '', pago: '' , referencia: ''})
+  const [venta, setVenta] = React.useState({
+    empleada: '',
+    tipoPago: '',
+    tipoPagoDetalle: '',
+    referencia: '',
+  })
   const [errors, setErrors] = React.useState({ nombre: '', telefono: '' })
 
   const [categoriasProductos, setCategoriasProductos] = React.useState([])
@@ -166,8 +184,16 @@ export default function Inventory() {
   
 
 
+  const pagoDetalleOpciones = React.useMemo(
+    () => TIPO_PAGO_DETALLES[venta.tipoPago] || [],
+    [venta.tipoPago]
+  )
+  const pagoDetalleSeleccionado = pagoDetalleOpciones.find(
+    (opt) => String(opt.id) === String(venta.tipoPagoDetalle)
+  )
   const requiereReferencia =
-    venta.pago === 'Tarjeta' || venta.pago === 'Transferencia'
+    pagoDetalleSeleccionado?.label === 'Transferencia' ||
+    pagoDetalleSeleccionado?.label === 'Cheque'
     
   // Snackbar de confirmación
   const [snack, setSnack] = React.useState({ open: false, msg: '', severity: 'success' })
@@ -501,8 +527,8 @@ export default function Inventory() {
     // Igual seguimos con la creación de la orden; sólo que no imprimirá.
 
     // 1) Cliente: existente o nuevo
-    const tipoPagoSeleccionado = tipoPago.find((item) => item.nombre === venta.pago)
-    if (!tipoPagoSeleccionado?.id) {
+    const tipoPagoId = Number(venta.tipoPagoDetalle)
+    if (!Number.isFinite(tipoPagoId)) {
       setSnack({ open: true, msg: 'Selecciona un tipo de pago válido', severity: 'warning' })
       if (printWindow && !printWindow.closed) {
         printWindow.close()
@@ -518,9 +544,10 @@ export default function Inventory() {
     }))
 
     // 3) Body para /ordenes
+    const fechaHoy = new Date().toISOString().slice(0, 10)
     const body = {
-      fecha: new Date().toISOString(),
-      tipo_pago_id: tipoPagoSeleccionado.id,
+      fecha: fechaHoy,
+      tipo_pago_id: tipoPagoId,
       estado_id: DEFAULT_ESTADO_ID,
       cliente_id: clienteSeleccionado.id,
       items: itemsPayload,
@@ -979,20 +1006,45 @@ export default function Inventory() {
               autoFocus
               select
               label="Tipo de Pago"
-              value={venta.pago}  // 👈 en vez de venta.empleada
+              value={venta.tipoPago}
               onChange={(e) =>
-                setVenta(prev => ({ ...prev, pago: e.target.value }))
+                setVenta(prev => ({
+                  ...prev,
+                  tipoPago: e.target.value,
+                  tipoPagoDetalle: '',
+                  referencia: '',
+                }))
               }
               error={!!errors.pago}
               helperText={errors.pago}
               fullWidth
             >
-              {tipoPago.map((pago) => (
-                <MenuItem key={pago.id} value={pago.nombre}>
-                  {pago.nombre}
+              {TIPO_PAGO_GRUPOS.map((pago) => (
+                <MenuItem key={pago.id} value={pago.id}>
+                  {pago.label}
                 </MenuItem>
               ))}
             </TextField>
+
+            {venta.tipoPago && (
+              <TextField
+                select
+                label={venta.tipoPago === 'credito' ? 'Días de crédito' : 'Forma de pago'}
+                value={venta.tipoPagoDetalle}
+                onChange={(e) =>
+                  setVenta(prev => ({ ...prev, tipoPagoDetalle: e.target.value }))
+                }
+                error={!!errors.pago}
+                helperText={errors.pago}
+                fullWidth
+              >
+                {pagoDetalleOpciones.map((detalle) => (
+                  <MenuItem key={detalle.id} value={detalle.id}>
+                    {detalle.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
 
             {requiereReferencia && (
               <TextField
