@@ -1,13 +1,12 @@
 // src/pages/Inventory.jsx
 import * as React from 'react'
 import {
-  Box, Grid, Typography, Divider, List, ListItem, ListItemText,
+  Box, Typography, Divider, List, ListItem, ListItemText,
   IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Stack, Snackbar, Alert, MenuItem, Autocomplete
+  TextField, Stack, Snackbar, Alert, MenuItem, Autocomplete,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
-import CategoryBar from '../components/CategoryBar'
-import ProductCard from '../components/ProductCard'
 import { API_BASE_URL } from '../config/api'
 
 
@@ -774,29 +773,56 @@ export default function Inventory() {
           />
         </Box>
 
-        <Grid container spacing={2} alignItems="stretch">
-          {filtered.map(prod => (
-            <Grid
-              key={prod.id}
-              item
-              xs={6}
-              sm={4}
-              md={3}
-              sx={{ display: 'flex' }}          // 🔹 todos los items son flex
-            >
-              <ProductCard
-                product={prod}
-                onClick={() => openQtySelector(prod)}
-                showPrice={hasClienteSeleccionado}
-              />
-            </Grid>
-          ))}
-          {filtered.length === 0 && (
-            <Grid item xs={12}>
-              <Typography color="text.secondary">No hay productos en esta categoría</Typography>
-            </Grid>
-          )}
-        </Grid>
+        <TableContainer sx={{ border: 1, borderColor: 'divider', borderRadius: 2 }}>
+          <Table
+            size="large"
+            stickyHeader
+            sx={{
+              '& .MuiTableCell-root': { fontSize: '1.25rem' },
+              '& .MuiTableCell-head': { fontWeight: 700, fontSize: '1.25rem' },
+            }}
+          >
+            <TableHead>
+              <TableRow>
+                <TableCell>SKU</TableCell>
+                <TableCell>Producto</TableCell>
+                <TableCell align="right">Precio</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filtered.map((prod) => {
+                const precio = Number(prod.precio)
+                const precioTexto = Number.isFinite(precio) ? `Q ${precio.toFixed(2)}` : 'Q 0.00'
+
+                return (
+                  <TableRow
+                    key={prod.id}
+                    hover
+                    onClick={() => openQtySelector(prod)}
+                    sx={{ cursor: 'pointer' }}
+                  >
+                    <TableCell>{prod.codigo || '-'}</TableCell>
+                    <TableCell>{prod.descripcion || prod.nombre || ''}</TableCell>
+                    <TableCell align="right">
+                      {hasClienteSeleccionado
+                        ? precioTexto
+                        : 'Selecciona cliente'}
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+              {filtered.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4}>
+                    <Typography color="text.secondary">
+                      No hay productos en esta categoría
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
 
       </Box>
 
