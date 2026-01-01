@@ -182,6 +182,20 @@ export default function Inventory() {
   const [categoria, setCategoria] = React.useState('')
   const [skuQuery, setSkuQuery] = React.useState('')
   
+  const filterClientes = (options, { inputValue }) => {
+    const query = inputValue.trim().toLowerCase()
+    if (!query) return options
+
+    return options.filter((option) => {
+      if (typeof option === 'string') {
+        return option.toLowerCase().includes(query)
+      }
+
+      const nombre = (option.nombre ?? '').toLowerCase()
+      const id = option.id != null ? String(option.id).toLowerCase() : ''
+      return nombre.includes(query) || id.includes(query)
+    })
+  }
 
 
   const pagoDetalleOpciones = React.useMemo(
@@ -847,6 +861,7 @@ export default function Inventory() {
           size="small"
           freeSolo
           options={clientes}
+          filterOptions={filterClientes}
           getOptionLabel={(option) =>
             typeof option === 'string' ? option : option.nombre
           }
@@ -929,6 +944,7 @@ export default function Inventory() {
               fullWidth
               freeSolo                          // permite escribir valores no existentes
               options={clientes}                // [{ id, nombre, telefono }, ...]
+              filterOptions={filterClientes}
               getOptionLabel={(option) =>
                 typeof option === 'string' ? option : option.nombre
               }
