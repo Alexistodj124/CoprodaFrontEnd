@@ -82,6 +82,7 @@ export default function Reportes() {
   const [ordenes, setOrdenes] = React.useState([])
   const [productosById, setProductosById] = React.useState({})
   const [clientesById, setClientesById] = React.useState({})
+  const [tiposPago, setTiposPago] = React.useState([])
     const [range, setRange] = React.useState([
     dayjs().startOf('month'),
     dayjs().endOf('day'),
@@ -144,6 +145,17 @@ export default function Reportes() {
         }
       }
       setClientesById(map)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const cargarTiposPago = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/tipos_pago`)
+      if (!res.ok) throw new Error('Error al obtener tipos de pago')
+      const data = await res.json()
+      setTiposPago(data || [])
     } catch (err) {
       console.error(err)
     }
@@ -266,7 +278,22 @@ export default function Reportes() {
     const clienteNombre = clienteInfo?.nombre ?? ''
     const clienteTel = clienteInfo?.telefono ?? ''
     const clienteDir = clienteInfo?.direccion ?? ''
-    const pago = (ordenSel.forma_pago || ordenSel.metodo_pago || ordenSel.pago || '').toString().toUpperCase()
+    const tipoPagoKey = ordenSel.tipo_pago_id != null ? String(ordenSel.tipo_pago_id) : ''
+    let tipoPagoSeleccionado = null
+    for (const tipo of tiposPago) {
+      if (String(tipo?.id) === tipoPagoKey) {
+        tipoPagoSeleccionado = tipo
+        break
+      }
+    }
+    const pagoNombre =
+      tipoPagoSeleccionado?.nombre ||
+      ordenSel.forma_pago ||
+      ordenSel.metodo_pago ||
+      ordenSel.pago ||
+      ordenSel.tipo_pago_id ||
+      ''
+    const pago = pagoNombre.toString().toUpperCase()
     const totalEnLetras = formatTotalEnLetras(totalOrdenSel)
 
     const copiesHtml = copyTypes.map((tipo) => `
@@ -429,6 +456,7 @@ export default function Reportes() {
   React.useEffect(() => {
     cargarProductos()
     cargarClientes()
+    cargarTiposPago()
   }, [])
 
   return (
@@ -481,26 +509,36 @@ export default function Reportes() {
                 <TableCell>Fecha</TableCell>
                 <TableCell>No. Orden</TableCell>
                 <TableCell>Cliente</TableCell>
+                <TableCell>Pago</TableCell>
                 <TableCell align="right">Total</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filtered.map((o) => {
                 const clienteInfo = o.cliente ?? clientesById[o.cliente_id]
+                const tipoPagoKey = o.tipo_pago_id != null ? String(o.tipo_pago_id) : ''
+                let tipoPagoNombre = ''
+                for (const tipo of tiposPago) {
+                  if (String(tipo?.id) === tipoPagoKey) {
+                    tipoPagoNombre = tipo?.nombre || ''
+                    break
+                  }
+                }
                 return (
-                <TableRow
-                  key={o.id}
-                  hover
-                  sx={{ cursor: 'pointer' }}
-                  onClick={() => setOrdenSel(o)}
-                >
-                  <TableCell>{dayjs(o.fecha).format('YYYY-MM-DD HH:mm')}</TableCell>
-                  <TableCell>{o.codigo ?? o.id}</TableCell>
-                  <TableCell>{clienteInfo?.nombre || '-'}</TableCell>
-                  <TableCell align="right">
-                    Q {calcTotal(o.items || [], getOrdenDescuento(o)).toFixed(2)}
-                  </TableCell>
-                </TableRow>
+                  <TableRow
+                    key={o.id}
+                    hover
+                    sx={{ cursor: 'pointer' }}
+                    onClick={() => setOrdenSel(o)}
+                  >
+                    <TableCell>{dayjs(o.fecha).format('YYYY-MM-DD HH:mm')}</TableCell>
+                    <TableCell>{o.codigo ?? o.id}</TableCell>
+                    <TableCell>{clienteInfo?.nombre || '-'}</TableCell>
+                    <TableCell>{tipoPagoNombre || '-'}</TableCell>
+                    <TableCell align="right">
+                      Q {calcTotal(o.items || [], getOrdenDescuento(o)).toFixed(2)}
+                    </TableCell>
+                  </TableRow>
                 )
               })}
               {filtered.length === 0 && (
