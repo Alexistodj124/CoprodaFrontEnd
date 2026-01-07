@@ -119,8 +119,9 @@ export default function Inventory() {
       }
 
       const nombre = (option.nombre ?? '').toLowerCase()
+      const codigo = (option.codigo ?? '').toLowerCase()
       const id = option.id != null ? String(option.id).toLowerCase() : ''
-      return nombre.includes(query) || id.includes(query)
+      return nombre.includes(query) || codigo.includes(query) || id.includes(query)
     })
   }
 
