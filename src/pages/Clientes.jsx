@@ -88,6 +88,7 @@ export default function Clientes() {
   const [ordenes, setOrdenes] = React.useState([])
   const [clientesRaw, setClientesRaw] = React.useState([])
   const [estadosOrden, setEstadosOrden] = React.useState([])
+  const [tiposPago, setTiposPago] = React.useState([])
   const [clienteSel, setClienteSel] = React.useState(null)   // objeto cliente agregado
   const [ordenSel, setOrdenSel] = React.useState(null)       // objeto orden para el diálogo
   const [abonoDialog, setAbonoDialog] = React.useState({
@@ -146,6 +147,26 @@ export default function Clientes() {
     }
 
     cargarClientes()
+  }, [])
+
+  // Cargar tipos de pago desde el backend
+  React.useEffect(() => {
+    const cargarTiposPago = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/tipos_pago`)
+        if (!res.ok) {
+          const txt = await res.text()
+          console.error('Error backend /tipos_pago:', txt)
+          return
+        }
+        const data = await res.json()
+        setTiposPago(data || [])
+      } catch (err) {
+        console.error('Error de red al cargar tipos de pago:', err)
+      }
+    }
+
+    cargarTiposPago()
   }, [])
 
   // Cargar estados de orden desde el backend
@@ -241,14 +262,16 @@ export default function Clientes() {
     if (!clienteSel) return []
     return clienteSel.ordenes
       .slice()
-      .sort((a, b) => dayjs(b.fecha).valueOf() - dayjs(a.fecha).valueOf())
+      .sort((a, b) => dayjs(a.fecha).valueOf() - dayjs(b.fecha).valueOf())
   }, [clienteSel])
 
   const saldoCliente = React.useMemo(() => {
     if (!clienteSel) return 0
-    const raw = clienteSel.saldo ?? clienteSel.balance ?? 0
-    const num = Number(raw)
-    return Number.isFinite(num) ? num : 0
+    const totalOrdenes = (clienteSel.ordenes || []).reduce(
+      (sum, orden) => sum + calcTotal(orden.items || []),
+      0
+    )
+    return Number.isFinite(totalOrdenes) ? totalOrdenes : 0
   }, [clienteSel])
 
   const abonosCliente = React.useMemo(() => {
@@ -258,17 +281,22 @@ export default function Clientes() {
     return Number.isFinite(num) ? num : 0
   }, [clienteSel])
 
-  const diasRestantes = React.useMemo(() => {
-    if (!clienteSel) return 0
-    const raw =
-      clienteSel.dias_restantes ??
-      clienteSel.diasRestantes ??
-      clienteSel.dias_credito ??
-      clienteSel.diasCredito ??
-      0
-    const num = Number(raw)
-    return Number.isFinite(num) ? num : 0
-  }, [clienteSel])
+  const getDiasCreditoForOrden = React.useCallback((orden) => {
+    const tipoPagoKey = orden?.tipo_pago_id != null ? String(orden.tipo_pago_id) : ''
+    let tipoPagoSeleccionado = null
+    for (const tipo of tiposPago) {
+      if (String(tipo?.id) === tipoPagoKey) {
+        tipoPagoSeleccionado = tipo
+        break
+      }
+    }
+    const nombrePago = (tipoPagoSeleccionado?.nombre || '').toLowerCase()
+    if (!nombrePago.includes('credito')) return 0
+
+    const firstToken = nombrePago.trim().split(/\s+/)[0]
+    const diasCredito = Number(firstToken)
+    return Number.isFinite(diasCredito) ? diasCredito : 0
+  }, [tiposPago])
 
   const pagosPendientesCliente = React.useMemo(() => {
     const c = abonoDialog.cliente
@@ -450,11 +478,36 @@ export default function Clientes() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {clientes.map(c => (
+              {clientes.map(c => {
+                const tieneVencidas = (c.ordenes || []).some((orden) => {
+                  const diasCredito = getDiasCreditoForOrden(orden)
+                  if (!diasCredito || diasCredito <= 0) return false
+                  const diasTranscurridos = orden?.fecha
+                    ? dayjs().diff(dayjs(orden.fecha), 'day')
+                    : 0
+                  const diasRestantes = diasCredito - diasTranscurridos
+                  return diasRestantes <= 0
+                })
+                const rowBg = tieneVencidas ? '#fdecea' : undefined
+                const rowColor = tieneVencidas ? '#c62828' : undefined
+                return (
                 <TableRow
                   key={c.id}
                   hover
-                  sx={{ cursor: 'pointer' }}
+                  sx={{
+                    cursor: 'pointer',
+                    backgroundColor: rowBg,
+                    color: rowColor,
+                    '&:hover': { backgroundColor: rowBg },
+                    ...(rowColor
+                      ? {
+                          '& td:first-of-type': {
+                            borderLeft: `4px solid ${rowColor}`,
+                            paddingLeft: 12,
+                          },
+                        }
+                      : null),
+                  }}
                   onClick={() => setClienteSel(c)}
                   selected={clienteSel?.id === c.id}
                 >
@@ -462,9 +515,10 @@ export default function Clientes() {
                   <TableCell>{c.telefono}</TableCell>
                   <TableCell align="right">{c.ordenes.length}</TableCell>
                   <TableCell align="right">Q {Number(c.total || 0).toFixed(2)}</TableCell>
-                  <TableCell>{c.ultima ? dayjs(c.ultima).format('YYYY-MM-DD HH:mm') : '—'}</TableCell>
+                  <TableCell>{c.ultima ? dayjs(c.ultima).format('YYYY-MM-DD') : '—'}</TableCell>
                 </TableRow>
-              ))}
+                )
+              })}
               {clientes.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5}>
@@ -561,26 +615,6 @@ export default function Clientes() {
                   Q {abonosCliente.toFixed(2)}
                 </Typography>
               </Box>
-              <Box
-                sx={{
-                  flex: 1,
-                  p: 1.5,
-                  bgcolor: diasRestantes >= 0 ? '#e8f5e9' : '#ffe5e5',
-                  border: `1px solid ${diasRestantes >= 0 ? '#81c784' : '#e57373'}`,
-                  borderRadius: 1,
-                }}
-              >
-                <Typography variant="caption" color="text.secondary">Días crédito</Typography>
-                <Typography
-                  variant="subtitle1"
-                  sx={{
-                    fontWeight: 700,
-                    color: diasRestantes >= 0 ? '#2e7d32' : '#c62828',
-                  }}
-                >
-                  {diasRestantes} días
-                </Typography>
-              </Box>
             </Stack>
           )}
 
@@ -589,25 +623,46 @@ export default function Clientes() {
               <TableRow>
                 <TableCell>Fecha</TableCell>
                 <TableCell>No. Orden</TableCell>
+                <TableCell align="right">Días crédito</TableCell>
                 <TableCell align="right">Total</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {ordenesCliente.map(o => (
+                (() => {
+                  const fechaOrden = o.fecha
+                  const diasTranscurridos = fechaOrden
+                    ? dayjs().diff(dayjs(fechaOrden), 'day')
+                    : 0
+                  const diasCredito = getDiasCreditoForOrden(o)
+                  const diasRestantes = diasCredito - diasTranscurridos
+                  const rowColor = diasRestantes <= 0 ? '#c62828' : '#2e7d32'
+                  const rowBg = diasRestantes <= 0 ? '#fdecea' : '#e8f5e9'
+                  return (
                 <TableRow
                   key={o.id}
                   hover
-                  sx={{ cursor: 'pointer' }}
+                  sx={{
+                    cursor: 'pointer',
+                    color: rowColor,
+                    backgroundColor: rowBg,
+                    '&:hover': { backgroundColor: rowBg },
+                  }}
                   onClick={() => setOrdenSel(o)}
                 >
-                  <TableCell>{dayjs(o.fecha).format('YYYY-MM-DD HH:mm')}</TableCell>
+                  <TableCell>{dayjs(o.fecha).format('YYYY-MM-DD')}</TableCell>
                   <TableCell>{o.codigo || o.id}</TableCell>
+                  <TableCell align="right">
+                    {diasRestantes} días
+                  </TableCell>
                   <TableCell align="right">Q {calcTotal(o.items).toFixed(2)}</TableCell>
                 </TableRow>
+                  )
+                })()
               ))}
               {clienteSel && ordenesCliente.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={3}>
+                  <TableCell colSpan={4}>
                     <Typography align="center" color="text.secondary">
                       Este cliente no tiene órdenes
                     </Typography>
@@ -690,7 +745,7 @@ export default function Clientes() {
               <Stack spacing={1} sx={{ mb: 2 }}>
                 <Typography variant="body2" color="text.secondary">
                   Fecha:{' '}
-                  {ordenSel ? dayjs(ordenSel.fecha).format('YYYY-MM-DD HH:mm') : '--'}
+                  {ordenSel ? dayjs(ordenSel.fecha).format('YYYY-MM-DD') : '--'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Cliente: {clienteOrden?.nombre || '—'} — {clienteOrden?.telefono || '—'}
