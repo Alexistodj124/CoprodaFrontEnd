@@ -259,7 +259,7 @@ export default function Reportes() {
       const res = await fetch(`${API_BASE_URL}/ordenes/${ordenSel.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ estado_id: 2 }),
+        body: JSON.stringify({ estado_id: 3 }),
       })
       if (!res.ok) throw new Error('Error al confirmar orden')
       const updated = await res.json()
