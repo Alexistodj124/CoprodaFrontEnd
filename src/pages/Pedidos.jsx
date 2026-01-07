@@ -334,8 +334,14 @@ export default function Reportes() {
         </div>
 
         <div class="firmas">
-          <div>FIRMA DEPTO. VENTAS:</div>
-          <div>FIRMA ACEPTACION CLIENTE:</div>
+          <div class="firma">
+            <div class="firma-linea"></div>
+            <div>FIRMA DEPTO. VENTAS:</div>
+          </div>
+          <div class="firma">
+            <div class="firma-linea"></div>
+            <div>FIRMA ACEPTACION CLIENTE:</div>
+          </div>
         </div>
       </div>
     `).join('')
@@ -390,7 +396,9 @@ export default function Reportes() {
             .totales { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
             .total-box { display: flex; align-items: center; gap: 10px; border: 1px solid #000; padding: 6px 10px; font-weight: 900; }
             .cantidad { font-size: 16px; }
-            .firmas { display: flex; justify-content: space-between; margin-top: 20px; font-weight: 700; }
+            .firmas { display: flex; justify-content: space-between; margin-top: 20px; font-weight: 700; gap: 20px; }
+            .firma { flex: 1; }
+            .firma-linea { border-top: 1px solid #000; margin: 65px 0 6px; }
           </style>
         </head>
         <body>
