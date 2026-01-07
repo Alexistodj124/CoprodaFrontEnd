@@ -10,6 +10,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import dayjs from 'dayjs'
 import isBetween from 'dayjs/plugin/isBetween'
 import { API_BASE_URL } from '../config/api'
+import logoCoproda from '../assets/image.png'
 dayjs.extend(isBetween)
 
 // --- Datos de ejemplo (luego los reemplazas por tu API/DB) ---
@@ -228,12 +229,13 @@ export default function Reportes() {
     const fmtDate = (d) => (d ? dayjs(d).format('DD/MM/YYYY HH:mm') : '')
     const numberFmt = (n) => `Q ${Number(n || 0).toFixed(2)}`
     const itemsRows = (ordenSel.items || []).map((it) => {
+      const productoInfo = it.producto ?? productosById[it.producto_id]
       const nombre =
-        it.producto?.nombre ||
+        productoInfo?.nombre ||
         it.servicio?.nombre ||
         it.nombre ||
         `Item #${it.id}`
-      const sku = it.producto?.sku || it.codigo || ''
+      const sku = productoInfo?.codigo || it.codigo || ''
       const price = getItemPrice(it)
       const qty = getItemQty(it)
       const subtotal = price * qty
@@ -248,18 +250,21 @@ export default function Reportes() {
       `
     }).join('')
 
-    const copyTypes = ['CONTABILIDAD', 'VENTAS']
+    const copyTypes = ['CONTABILIDAD']
     const fechaTexto = fmtDate(ordenSel.fecha)
     const codigo = ordenSel.codigo ?? ordenSel.id ?? ''
-    const clienteNombre = ordenSel.cliente?.nombre ?? ''
-    const clienteTel = ordenSel.cliente?.telefono ?? ''
-    const clienteDir = ordenSel.cliente?.direccion ?? ''
-    const pago = (ordenSel.forma_pago || ordenSel.metodo_pago || ordenSel.pago || 'CONTADO').toString().toUpperCase()
+    const clienteInfo = ordenSel.cliente ?? clientesById[ordenSel.cliente_id]
+    const clienteNombre = clienteInfo?.nombre ?? ''
+    const clienteTel = clienteInfo?.telefono ?? ''
+    const clienteDir = clienteInfo?.direccion ?? ''
+    const pago = (ordenSel.forma_pago || ordenSel.metodo_pago || ordenSel.pago || '').toString().toUpperCase()
 
     const copiesHtml = copyTypes.map((tipo) => `
       <div class="hoja">
+        <div class="watermark">
+          <img src="${logoCoproda}" alt="Coproda" />
+        </div>
         <div class="encabezado">
-          <div class="logo">COPRODA</div>
           <div class="empresa">
             <div class="title">COMPAÑÍA PROCESADORA DE ALUMINIO, S.A.</div>
             <div class="sub">
@@ -332,9 +337,24 @@ export default function Reportes() {
           <style>
             @page { margin: 15mm; }
             body { font-family: 'Times New Roman', serif; font-size: 12px; margin: 0; }
-            .hoja { border: 1px solid #222; padding: 10px 12px 14px; margin-bottom: 16px; page-break-inside: avoid; }
-            .encabezado { display: grid; grid-template-columns: 80px 1fr 150px; gap: 8px; align-items: center; }
-            .logo { font-weight: 900; font-size: 18px; text-align: center; border: 2px solid #b00; color: #b00; padding: 10px 6px; border-radius: 8px; }
+            .watermark {
+              position: absolute;
+              inset: 0;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              opacity: 0.08;
+              pointer-events: none;
+              z-index: 0;
+            }
+            .watermark img {
+              width: 100%;
+              max-width: 1000px;
+              height: auto;
+              filter: grayscale(100%);
+            }
+            .hoja { border: 1px solid #222; padding: 10px 12px 14px; margin-bottom: 16px; page-break-inside: avoid; position: relative; }
+            .encabezado { display: grid; grid-template-columns: 1fr 150px; gap: 8px; align-items: center; }
             .empresa .title { font-weight: 900; text-align: center; font-size: 14px; }
             .empresa .sub { text-align: center; font-size: 10px; line-height: 1.3; margin-top: 2px; }
             .caja { border: 1px solid #000; padding: 6px; font-size: 11px; }
