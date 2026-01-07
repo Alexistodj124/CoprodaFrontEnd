@@ -88,6 +88,7 @@ export default function Clientes() {
   const [ordenes, setOrdenes] = React.useState([])
   const [clientesRaw, setClientesRaw] = React.useState([])
   const [estadosOrden, setEstadosOrden] = React.useState([])
+  const [productosById, setProductosById] = React.useState({})
   const [tiposPago, setTiposPago] = React.useState([])
   const [clienteSel, setClienteSel] = React.useState(null)   // objeto cliente agregado
   const [ordenSel, setOrdenSel] = React.useState(null)       // objeto orden para el diálogo
@@ -145,8 +146,25 @@ export default function Clientes() {
         console.error('Error de red al cargar clientes:', err)
       }
     }
+    const cargarProductos = async () => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/productos`)
+          if (!res.ok) throw new Error('Error al obtener productos')
+          const data = await res.json()
+          const map = {}
+          for (const producto of data || []) {
+            if (producto?.id != null) {
+              map[producto.id] = producto
+            }
+          }
+          setProductosById(map)
+        } catch (err) {
+          console.error(err)
+        }
+      }
 
     cargarClientes()
+    cargarProductos()
   }, [])
 
   // Cargar tipos de pago desde el backend
@@ -774,14 +792,20 @@ export default function Clientes() {
             </TableHead>
             <TableBody>
               {ordenSel?.items?.map((it) => {
-                const nombre =
-                  it.nombre ||
-                  it.name ||
-                  (it.producto_id
-                    ? `Producto #${it.producto_id}`
-                    : it.servicio_id
-                    ? `Servicio #${it.servicio_id}`
-                    : `Item ${it.id}`)
+                const productoInfo = it.producto ?? productosById[it.producto_id]
+                  let nombre = ''
+                  if (it.tipo === 'servicio') {
+                    nombre =
+                      it.servicio?.descripcion ||
+                      it.nombre ||
+                      `Servicio #${it.servicio_id ?? it.id}`
+                  } else { // asumimos 'producto'
+                    nombre =
+                      productoInfo?.nombre ||
+                      productoInfo?.descripcion ||
+                      it.nombre ||
+                      `Producto #${it.producto_id ?? it.id}`
+                  }
 
                 const sku = it.producto?.codigo || it.codigo || ''
 
