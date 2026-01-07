@@ -218,7 +218,7 @@ export default function NuevaCompra() {
         <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
             {/* Imagen */}
-            <Box sx={{ textAlign: 'center' }}>
+            {/* <Box sx={{ textAlign: 'center' }}>
               {preview ? (
                 <Box
                   component="img"
@@ -259,7 +259,7 @@ export default function NuevaCompra() {
                   onChange={handleImageChange}
                 />
               </Button>
-            </Box>
+            </Box> */}
 
             {/* Nombre */}
             <TextField
