@@ -248,6 +248,10 @@ export default function Reportes() {
     if (!ordenSel) return
 
     const fmtDate = (d) => (d ? dayjs(d).format('DD/MM/YYYY HH:mm') : '')
+    const addDaysToDate = (dateValue, days) => {
+      if (!dateValue || !Number.isFinite(days)) return ''
+      return dayjs(dateValue).add(days, 'day').format('DD/MM/YYYY')
+    }
     const numberFmt = (n) => `Q ${Number(n || 0).toFixed(2)}`
     const itemsRows = (ordenSel.items || []).map((it) => {
       const productoInfo = it.producto ?? productosById[it.producto_id]
@@ -295,6 +299,15 @@ export default function Reportes() {
       ''
     const pago = pagoNombre.toString().toUpperCase()
     const totalEnLetras = formatTotalEnLetras(totalOrdenSel)
+    const pagoNombreLower = pagoNombre.toString().toLowerCase()
+    let vencimiento = ''
+    if (pagoNombreLower.includes('credito')) {
+      const firstToken = pagoNombreLower.trim().split(/\s+/)[0]
+      const diasCredito = Number(firstToken)
+      if (Number.isFinite(diasCredito) && diasCredito > 0) {
+        vencimiento = addDaysToDate(ordenSel.fecha, diasCredito)
+      }
+    }
 
     const copiesHtml = copyTypes.map((tipo) => `
       <div class="hoja">
@@ -334,7 +347,7 @@ export default function Reportes() {
         <div class="datos">
           <div><strong>NIT:</strong> __________</div>
           <div><strong>PAGO:</strong> ${pago}</div>
-          <div><strong>VENCIMIENTO:</strong> __________</div>
+          <div><strong>VENCIMIENTO:</strong> ${vencimiento || '__________'}</div>
         </div>
 
         <table class="tabla">
