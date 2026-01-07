@@ -274,7 +274,7 @@ export default function Reportes() {
   const handlePrintOrden = () => {
     if (!ordenSel) return
 
-    const fmtDate = (d) => (d ? dayjs(d).format('DD/MM/YYYY HH:mm') : '')
+    const fmtDate = (d) => (d ? dayjs(d).format('DD/MM/YYYY') : '')
     const addDaysToDate = (dateValue, days) => {
       if (!dateValue || !Number.isFinite(days)) return ''
       return dayjs(dateValue).add(days, 'day').format('DD/MM/YYYY')
@@ -567,7 +567,7 @@ export default function Reportes() {
                     sx={{ cursor: 'pointer' }}
                     onClick={() => setOrdenSel(o)}
                   >
-                    <TableCell>{dayjs(o.fecha).format('YYYY-MM-DD HH:mm')}</TableCell>
+                    <TableCell>{dayjs(o.fecha).format('YYYY-MM-DD')}</TableCell>
                     <TableCell>{o.codigo ?? o.id}</TableCell>
                     <TableCell>{clienteInfo?.nombre || '-'}</TableCell>
                     <TableCell>{tipoPagoNombre || '-'}</TableCell>
@@ -597,7 +597,7 @@ export default function Reportes() {
           <DialogContent dividers>
             <Stack spacing={1} sx={{ mb: 2 }}>
               <Typography variant="body2" color="text.secondary">
-                Fecha: {ordenSel ? dayjs(ordenSel.fecha).format('YYYY-MM-DD HH:mm') : '--'}
+                Fecha: {ordenSel ? dayjs(ordenSel.fecha).format('YYYY-MM-DD') : '--'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Cliente: {(ordenSel?.cliente ?? clientesById[ordenSel?.cliente_id])?.nombre || '-'} — {(ordenSel?.cliente ?? clientesById[ordenSel?.cliente_id])?.telefono || '-'}
