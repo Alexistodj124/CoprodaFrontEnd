@@ -44,65 +44,6 @@ const tipoPOS = [
   { id: 'prod', label: 'Productos' },
 ]
 
-const parseTicketDate = (...dates) => {
-  const normalize = (value) => {
-    if (!value) return null
-    if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value
-
-    // Numbers: allow seconds (10 digits) or ms (13 digits)
-    if (typeof value === 'number') {
-      const ms = value < 1e11 ? value * 1000 : value
-      const d = new Date(ms)
-      return Number.isNaN(d.getTime()) ? null : d
-    }
-
-    if (typeof value === 'string') {
-      const trimmed = value.trim()
-      if (!trimmed) return null
-      const num = Number(trimmed)
-      if (!Number.isNaN(num)) {
-        const ms = num < 1e11 ? num * 1000 : num
-        const d = new Date(ms)
-        if (!Number.isNaN(d.getTime())) return d
-      }
-
-      // Try ISO-ish strings; add "T" and optional "Z" if missing
-      const candidates = [
-        trimmed,
-        trimmed.replace(' ', 'T'),
-        `${trimmed.replace(' ', 'T')}Z`,
-      ]
-      for (const candidate of candidates) {
-        const d = new Date(candidate)
-        if (!Number.isNaN(d.getTime())) return d
-      }
-    }
-
-    return null
-  }
-
-  for (const d of dates) {
-    const parsed = normalize(d)
-    if (parsed) return parsed
-  }
-  return null
-}
-
-const formatTicketDate = (date) => {
-  if (!date) return ''
-  // Ajuste manual de -5 horas por desfase reportado en impresión
-  const adjusted = new Date(date.getTime() - 6 * 60 * 60 * 1000)
-  try {
-    return new Intl.DateTimeFormat('es-GT', {
-      timeZone: 'America/Guatemala',
-      dateStyle: 'short',
-      timeStyle: 'medium',
-    }).format(adjusted)
-  } catch {
-    return adjusted.toLocaleString()
-  }
-}
-
 
 export default function Inventory() {
   const DEFAULT_ESTADO_ID = 1
@@ -336,91 +277,6 @@ export default function Inventory() {
     }
   }
 
-  const handlePrintTicket = (ticket) => {
-    // Construimos el HTML de los items
-    const itemsHtml = ticket.items.map((it) => `
-      <div style="margin-bottom:3px;">
-        <div>${it.qty} x ${it.descripcion}</div>
-        <div style="display:flex;justify-content:space-between;">
-          <span>Q ${it.precio.toFixed(2)}</span>
-          <span>Q ${(it.precio * it.qty).toFixed(2)}</span>
-        </div>
-      </div>
-    `).join('')
-
-    const printWindow = window.open('', '', 'width=400,height=600')
-    if (!printWindow) return // popup bloqueado
-
-    const ticketDate = parseTicketDate(
-      ticket.fecha,
-      ticket.fecha_creacion,
-      ticket.created_at,
-      ticket.createdAt,
-      ticket.created
-    )
-    const ticketDateText = formatTicketDate(ticketDate)
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Ticket</title>
-          <style>
-            @page {
-              size: 80mm auto;
-              margin: 2mm;
-            }
-            * {
-              box-sizing: border-box;
-            }
-            body {
-              margin: 0;
-              font-family: monospace;
-              font-size: 11px;
-            }
-            .ticket {
-              width: 80mm;
-            }
-            hr {
-              border: 0;
-              border-top: 1px dashed #000;
-              margin: 4px 0;
-            }
-          </style>
-        </head>
-        <body>
-            <div class="ticket" style="padding:4px;">
-              <div style="text-align:center;margin-bottom:4px;">
-                <div style="font-weight:bold;">AM BOUTIQUE</div>
-                <div>Ticket: ${ticket.codigo}</div>
-                <div>${ticketDateText}</div>
-              </div>
-              <hr />
-              <div style="margin-bottom:4px;">
-                <div>Cliente: ${ticket.cliente?.nombre || ''}</div>
-                <div>Tel: ${ticket.cliente?.telefono || ''}</div>
-            </div>
-            <hr />
-            ${itemsHtml}
-            <hr />
-            <div style="display:flex;justify-content:space-between;font-weight:bold;">
-              <span>Total</span>
-              <span>Q ${ticket.total.toFixed(2)}</span>
-            </div>
-            <div style="text-align:center;margin-top:6px;">
-              ¡Gracias por su compra!
-            </div>
-          </div>
-        </body>
-      </html>
-    `)
-
-    printWindow.document.close()
-    printWindow.focus()
-    printWindow.print()
-    printWindow.close()
-  }
-
-
   const addToCart = (prod, qtyToAdd = 1) => {
     const qty = Number(qtyToAdd) || 0
     if (qty <= 0) return
@@ -549,18 +405,10 @@ export default function Inventory() {
       return
     }
 
-    // 0) Abrimos la ventana de impresión AQUÍ (gesto de usuario)
-    const printWindow = window.open('', '', 'width=400,height=600')
-    // Si el navegador bloquea el popup, printWindow será null
-    // Igual seguimos con la creación de la orden; sólo que no imprimirá.
-
     // 1) Cliente: existente o nuevo
     const tipoPagoId = Number(venta.tipoPagoDetalle)
     if (!Number.isFinite(tipoPagoId)) {
       setSnack({ open: true, msg: 'Selecciona un tipo de pago válido', severity: 'warning' })
-      if (printWindow && !printWindow.closed) {
-        printWindow.close()
-      }
       return
     }
 
@@ -599,110 +447,11 @@ export default function Inventory() {
           msg: 'Error al crear la orden ❌',
           severity: 'error',
         })
-
-        // Si abrimos una ventana de impresión antes, la cerramos
-        if (printWindow && !printWindow.closed) {
-          printWindow.close()
-        }
         return
       }
 
       const data = await res.json()
       console.log('Orden creada en backend:', data)
-
-      // ==== Construimos el HTML del ticket ====
-      const ticketCodigo = data.codigo || data.id || `ORD-${Date.now()}`
-      const ticketFecha = parseTicketDate(
-        data.fecha,
-        data.fecha_creacion,
-        data.created_at,
-        data.createdAt,
-        data.created,
-        Date.now()
-      )
-      const ticketFechaTexto = formatTicketDate(ticketFecha)
-
-      const ticketClienteNombre = clienteSeleccionado?.nombre ?? ''
-      const ticketClienteTelefono = clienteSeleccionado?.telefono ?? ''
-
-      const subtotalTicket = cart.reduce((sum, it) => sum + it.precio * it.qty, 0)
-      const totalFromBackend = typeof data.total === 'number' ? data.total : subtotalTicket
-
-      const itemsHtml = cart.map(it => `
-        <div style="margin-bottom:3px">
-          <div>${it.qty} x ${it.descripcion}</div>
-          <div style="display:flex;justify-content:space-between">
-            <span>Q ${it.precio.toFixed(2)}</span>
-            <span>Q ${(it.precio * it.qty).toFixed(2)}</span>
-          </div>
-        </div>
-      `).join('')
-
-      const ticketHtml = `
-        <html>
-          <head>
-            <title>Ticket ${ticketCodigo}</title>
-            <style>
-              @page {
-                size: 80mm auto;
-                margin: 2mm;
-              }
-              * {
-                box-sizing: border-box;
-              }
-              body {
-                margin: 0;
-                font-family: monospace;
-                font-size: 11px;
-              }
-              .ticket {
-                width: 80mm;
-                padding: 4px;
-              }
-              hr {
-                border: 0;
-                border-top: 1px dashed #000;
-                margin: 4px 0;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="ticket">
-              <div style="text-align:center;margin-bottom:4px">
-                <div style="font-weight:bold">AM Boutique</div>
-                <div>Ticket: ${ticketCodigo}</div>
-                <div>${ticketFechaTexto}</div>
-              </div>
-              <hr/>
-              <div style="margin-bottom:4px">
-                <div>Cliente: ${ticketClienteNombre}</div>
-                <div>Tel: ${ticketClienteTelefono || ''}</div>
-              </div>
-              <hr/>
-              ${itemsHtml}
-              <hr/>
-              <div style="display:flex;justify-content:space-between;font-weight:bold">
-                <span>Total</span>
-                <span>Q ${totalFromBackend.toFixed(2)}</span>
-              </div>
-              <div style="text-align:center;margin-top:6px">
-                ¡Gracias por su compra!
-              </div>
-            </div>
-          </body>
-        </html>
-      `
-
-      // ==== Escribimos y mandamos a imprimir ====
-      if (printWindow) {
-        printWindow.document.open()
-        printWindow.document.write(ticketHtml)
-        printWindow.document.close()
-        printWindow.focus()
-        printWindow.print()
-        // Opcional: cerrar después de imprimir
-        // printWindow.close()
-      }
 
       // Feedback y limpieza
       setSnack({
@@ -723,9 +472,6 @@ export default function Inventory() {
         msg: 'Error de conexión al crear la orden ❌',
         severity: 'error',
       })
-      if (printWindow && !printWindow.closed) {
-        printWindow.close()
-      }
     }
   }
 
