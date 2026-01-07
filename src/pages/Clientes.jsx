@@ -20,6 +20,7 @@ function calcTotal(items = []) {
 export default function Clientes() {
   const [query, setQuery] = React.useState('')
   const [ordenes, setOrdenes] = React.useState([])
+  const [clientesRaw, setClientesRaw] = React.useState([])
   const [clienteSel, setClienteSel] = React.useState(null)   // objeto cliente agregado
   const [ordenSel, setOrdenSel] = React.useState(null)       // objeto orden para el diálogo
   const [abonoDialog, setAbonoDialog] = React.useState({
@@ -37,7 +38,7 @@ export default function Clientes() {
     loading: false,
     error: '',
   })
-  const [clientesCreados, setClientesCreados] = React.useState([])
+  
 
   // Cargar órdenes desde el backend
   React.useEffect(() => {
@@ -60,60 +61,62 @@ export default function Clientes() {
     cargarOrdenes()
   }, [])
 
-  // ---- Construir "clientes" agregando info desde las órdenes ----
-  const clientes = React.useMemo(() => {
-    const map = new Map()
-
-    for (const o of ordenes) {
-      const cli = o.cliente || {}
-      const key = cli.id || cli.telefono || cli.nombre
-      if (!key) continue
-
-      const totalOrden = calcTotal(o.items || [])
-
-      if (!map.has(key)) {
-        map.set(key, {
-          id: key,
-          nombre: cli.nombre,
-          telefono: cli.telefono,
-          email: cli.email,
-          nit: cli.nit,
-          ordenes: [o],
-          total: totalOrden,
-          ultima: o.fecha,
-        })
-      } else {
-        const c = map.get(key)
-        c.ordenes.push(o)
-        c.total += totalOrden
-        c.ultima = dayjs(o.fecha).isAfter(dayjs(c.ultima)) ? o.fecha : c.ultima
+  // Cargar clientes desde el backend
+  React.useEffect(() => {
+    const cargarClientes = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/clientes`)
+        if (!res.ok) {
+          const txt = await res.text()
+          console.error('Error backend /clientes:', txt)
+          return
+        }
+        const data = await res.json()
+        setClientesRaw(data || [])
+      } catch (err) {
+        console.error('Error de red al cargar clientes:', err)
       }
     }
 
-    // Agregar clientes creados manualmente (sin órdenes aún)
-    for (const cli of clientesCreados) {
-      if (!cli.id) continue
-      if (map.has(cli.id)) continue
-      map.set(cli.id, {
-        id: cli.id,
-        nombre: cli.nombre,
-        telefono: cli.telefono,
-        email: cli.email,
-        nit: cli.nit,
-        ordenes: [],
-        total: 0,
-        ultima: cli.creado_en || cli.actualizado_en || new Date().toISOString(),
-      })
+    cargarClientes()
+  }, [])
+
+  // ---- Construir "clientes" agregando info desde las órdenes ----
+  const clientes = React.useMemo(() => {
+    const ordersByCliente = new Map()
+    for (const o of ordenes) {
+      const id = o.cliente_id ?? o.cliente?.id
+      if (id == null) continue
+      if (!ordersByCliente.has(id)) {
+        ordersByCliente.set(id, [])
+      }
+      ordersByCliente.get(id).push(o)
     }
 
-    let arr = Array.from(map.values())
+    let arr = (clientesRaw || []).map((cli) => {
+      const orders = ordersByCliente.get(cli.id) || []
+      const total = orders.reduce((sum, o) => sum + calcTotal(o.items || []), 0)
+      let ultima = null
+      for (const o of orders) {
+        if (!ultima || dayjs(o.fecha).isAfter(dayjs(ultima))) {
+          ultima = o.fecha
+        }
+      }
+      return {
+        ...cli,
+        ordenes: orders,
+        total,
+        ultima,
+      }
+    })
 
     // filtro por texto (nombre o teléfono)
     if (query.trim()) {
       const q = query.toLowerCase()
       arr = arr.filter(c =>
         (c.nombre || '').toLowerCase().includes(q) ||
-        (c.telefono || '').toLowerCase().includes(q)
+        (c.telefono || '').toLowerCase().includes(q) ||
+        (c.codigo || '').toLowerCase().includes(q)
       )
     }
 
@@ -124,7 +127,17 @@ export default function Clientes() {
       return bDate - aDate
     })
     return arr
-  }, [ordenes, query, clientesCreados])
+  }, [ordenes, query, clientesRaw])
+
+  const clientesById = React.useMemo(() => {
+    const map = {}
+    for (const cli of clientesRaw || []) {
+      if (cli?.id != null) {
+        map[cli.id] = cli
+      }
+    }
+    return map
+  }, [clientesRaw])
 
   // Órdenes del cliente seleccionado
   const ordenesCliente = React.useMemo(() => {
@@ -280,7 +293,7 @@ export default function Clientes() {
         total: 0,
         ultima: data.creado_en || new Date().toISOString(),
       }
-      setClientesCreados((prev) => [...prev, nuevoCliente])
+      setClientesRaw((prev) => [...prev, nuevoCliente])
       setClienteSel(nuevoCliente)
       handleCloseClienteDialog()
     } catch (err) {
@@ -303,7 +316,7 @@ export default function Clientes() {
       <Paper sx={{ p: 2, borderRadius: 3, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }}>
           <TextField
-            label="Buscar cliente (nombre o teléfono)"
+            label="Buscar cliente (nombre, teléfono o código)"
             size="small"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -331,7 +344,7 @@ export default function Clientes() {
                 <TableCell>Cliente</TableCell>
                 <TableCell>Teléfono</TableCell>
                 <TableCell align="right">Órdenes</TableCell>
-                <TableCell align="right">Total gastado</TableCell>
+                <TableCell align="right">Total</TableCell>
                 <TableCell>Última compra</TableCell>
               </TableRow>
             </TableHead>
@@ -390,12 +403,17 @@ export default function Clientes() {
               )}
               {clienteSel && (
                 <Typography variant="body2" color="text.secondary">
-                  {clienteSel.email ? `Email: ${clienteSel.email}` : 'Email: —'}
+                  {clienteSel.direccion ? `Dirección: ${clienteSel.direccion}` : 'Dirección: —'}
                 </Typography>
               )}
               {clienteSel && (
                 <Typography variant="body2" color="text.secondary">
-                  {clienteSel.nit ? `NIT: ${clienteSel.nit}` : 'NIT: —'}
+                  {clienteSel.codigo ? `Código: ${clienteSel.codigo}` : 'Código: —'}
+                </Typography>
+              )}
+              {clienteSel && (
+                <Typography variant="body2" color="text.secondary">
+                  {clienteSel.clasificacion_precio ? `Clasificación: ${clienteSel.clasificacion_precio}` : 'Clasificación: —'}
                 </Typography>
               )}
             </Box>
@@ -565,21 +583,26 @@ export default function Clientes() {
       <Dialog open={!!ordenSel} onClose={() => setOrdenSel(null)} maxWidth="sm" fullWidth>
         <DialogTitle>Orden {ordenSel?.codigo || ordenSel?.id}</DialogTitle>
         <DialogContent dividers>
-          <Stack spacing={1} sx={{ mb: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              Fecha:{' '}
-              {ordenSel ? dayjs(ordenSel.fecha).format('YYYY-MM-DD HH:mm') : '--'}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Cliente: {ordenSel?.cliente?.nombre} — {ordenSel?.cliente?.telefono}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Email: {ordenSel?.cliente?.email || '—'}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              NIT: {ordenSel?.cliente?.nit || '—'}
-            </Typography>
-          </Stack>
+          {(() => {
+            const clienteOrden = ordenSel?.cliente ?? clientesById[ordenSel?.cliente_id]
+            return (
+              <Stack spacing={1} sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Fecha:{' '}
+                  {ordenSel ? dayjs(ordenSel.fecha).format('YYYY-MM-DD HH:mm') : '--'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Cliente: {clienteOrden?.nombre || '—'} — {clienteOrden?.telefono || '—'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Dirección: {clienteOrden?.direccion || '—'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Código: {clienteOrden?.codigo || '—'}
+                </Typography>
+              </Stack>
+            )
+          })()}
 
           <Divider sx={{ mb: 2 }} />
 
@@ -604,7 +627,7 @@ export default function Clientes() {
                     ? `Servicio #${it.servicio_id}`
                     : `Item ${it.id}`)
 
-                const sku = it.producto?.sku || ''
+                const sku = it.producto?.codigo || it.codigo || ''
 
                 const precio = it.precio ?? it.price ?? it.precio_unitario ?? 0
                 const qty = it.cantidad ?? it.qty ?? 1
