@@ -11,6 +11,7 @@ import dayjs from 'dayjs'
 import isBetween from 'dayjs/plugin/isBetween'
 import { API_BASE_URL } from '../config/api'
 import logoCoproda from '../assets/image.png'
+import { NumerosALetras } from 'numero-a-letras'
 dayjs.extend(isBetween)
 
 // --- Datos de ejemplo (luego los reemplazas por tu API/DB) ---
@@ -51,6 +52,14 @@ const calcSubtotal = (items = []) =>
   items.reduce((s, it) => s + getItemPrice(it) * getItemQty(it), 0)
 const calcCostoTotal = (items = []) =>
   items.reduce((s, it) => s + getItemCost(it) * getItemQty(it), 0)
+const formatTotalEnLetras = (value) => {
+  const num = Number(value)
+  if (!Number.isFinite(num)) return ''
+  return NumerosALetras(num)
+    .replace('Pesos', 'Quetzales')
+    .replace('Peso', 'Quetzal')
+    .replace('/100 M.N.', '/100')
+}
 
 // Util: calcular total (restando el descuento de la orden si existe)
 function calcTotal(items = [], descuento = 0) {
@@ -258,6 +267,7 @@ export default function Reportes() {
     const clienteTel = clienteInfo?.telefono ?? ''
     const clienteDir = clienteInfo?.direccion ?? ''
     const pago = (ordenSel.forma_pago || ordenSel.metodo_pago || ordenSel.pago || '').toString().toUpperCase()
+    const totalEnLetras = formatTotalEnLetras(totalOrdenSel)
 
     const copiesHtml = copyTypes.map((tipo) => `
       <div class="hoja">
@@ -316,7 +326,7 @@ export default function Reportes() {
         </table>
 
         <div class="totales">
-          <div>TOTAL EN LETRAS: _________________________________</div>
+          <div>TOTAL EN LETRAS: ${totalEnLetras || '_______________________________'}</div>
           <div class="total-box">
             <span>TOTAL</span>
             <span class="cantidad">${numberFmt(totalOrdenSel)}</span>
@@ -337,6 +347,7 @@ export default function Reportes() {
           <style>
             @page { margin: 15mm; }
             body { font-family: 'Times New Roman', serif; font-size: 12px; margin: 0; }
+            *, *::before, *::after { box-sizing: border-box; }
             .watermark {
               position: absolute;
               inset: 0;
@@ -353,7 +364,14 @@ export default function Reportes() {
               height: auto;
               filter: grayscale(100%);
             }
-            .hoja { border: 1px solid #222; padding: 10px 12px 14px; margin-bottom: 16px; page-break-inside: avoid; position: relative; }
+            .hoja {
+              border: 1px solid #222;
+              padding: 10px 12px 14px;
+              margin-bottom: 16px;
+              page-break-inside: avoid;
+              position: relative;
+              width: calc(100% - 2px);
+            }
             .encabezado { display: grid; grid-template-columns: 1fr 150px; gap: 8px; align-items: center; }
             .empresa .title { font-weight: 900; text-align: center; font-size: 14px; }
             .empresa .sub { text-align: center; font-size: 10px; line-height: 1.3; margin-top: 2px; }
