@@ -87,6 +87,7 @@ export default function Clientes() {
   const [query, setQuery] = React.useState('')
   const [ordenes, setOrdenes] = React.useState([])
   const [clientesRaw, setClientesRaw] = React.useState([])
+  const [estadosOrden, setEstadosOrden] = React.useState([])
   const [clienteSel, setClienteSel] = React.useState(null)   // objeto cliente agregado
   const [ordenSel, setOrdenSel] = React.useState(null)       // objeto orden para el diálogo
   const [abonoDialog, setAbonoDialog] = React.useState({
@@ -147,10 +148,40 @@ export default function Clientes() {
     cargarClientes()
   }, [])
 
+  // Cargar estados de orden desde el backend
+  React.useEffect(() => {
+    const cargarEstadosOrden = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/estados_orden`)
+        if (!res.ok) {
+          const txt = await res.text()
+          console.error('Error backend /estados_orden:', txt)
+          return
+        }
+        const data = await res.json()
+        setEstadosOrden(data || [])
+      } catch (err) {
+        console.error('Error de red al cargar estados:', err)
+      }
+    }
+
+    cargarEstadosOrden()
+  }, [])
+
+  const ordenesPendientesPago = React.useMemo(() => {
+    const estadoPendiente = estadosOrden.find(
+      (estado) => String(estado?.nombre || '').toLowerCase() === 'pendiente de pago'
+    )
+    if (!estadoPendiente?.id) return ordenes
+    return ordenes.filter(
+      (orden) => String(orden?.estado_id) === String(estadoPendiente.id)
+    )
+  }, [ordenes, estadosOrden])
+
   // ---- Construir "clientes" agregando info desde las órdenes ----
   const clientes = React.useMemo(() => {
     const ordersByCliente = new Map()
-    for (const o of ordenes) {
+    for (const o of ordenesPendientesPago) {
       const id = o.cliente_id ?? o.cliente?.id
       if (id == null) continue
       if (!ordersByCliente.has(id)) {
@@ -193,7 +224,7 @@ export default function Clientes() {
       return bDate - aDate
     })
     return arr
-  }, [ordenes, query, clientesRaw])
+  }, [ordenesPendientesPago, query, clientesRaw])
 
   const clientesById = React.useMemo(() => {
     const map = {}
