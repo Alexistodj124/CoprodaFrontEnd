@@ -16,7 +16,14 @@ dayjs.extend(isBetween)
 
 // Utilidades de totales
 const getItemPrice = (item) => {
-  const raw = item?.price ?? item?.precio_unitario ?? item?.producto?.precio ?? 0
+  const raw =
+    item?.precio ??
+    item?.price ??
+    item?.precio_unitario ??
+    item?.producto?.precio_minorista ??
+    item?.producto?.precio_cf ??
+    item?.producto?.precio_mayorista ??
+    0
   const num = Number(raw)
   return Number.isFinite(num) ? num : 0
 }
@@ -63,6 +70,8 @@ function calcGanancia(items = [], descuento = 0) {
 export default function Reportes() {
   const [ordenSel, setOrdenSel] = React.useState(null)
   const [ordenes, setOrdenes] = React.useState([])
+  const [productosById, setProductosById] = React.useState({})
+  const [clientesById, setClientesById] = React.useState({})
     const [range, setRange] = React.useState([
     dayjs().startOf('month'),
     dayjs().endOf('day'),
@@ -91,6 +100,40 @@ export default function Reportes() {
 
       const data = await res.json()
       setOrdenes(data)   // array de ordenes desde el back
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const cargarProductos = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/productos`)
+      if (!res.ok) throw new Error('Error al obtener productos')
+      const data = await res.json()
+      const map = {}
+      for (const producto of data || []) {
+        if (producto?.id != null) {
+          map[producto.id] = producto
+        }
+      }
+      setProductosById(map)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const cargarClientes = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/clientes`)
+      if (!res.ok) throw new Error('Error al obtener clientes')
+      const data = await res.json()
+      const map = {}
+      for (const cliente of data || []) {
+        if (cliente?.id != null) {
+          map[cliente.id] = cliente
+        }
+      }
+      setClientesById(map)
     } catch (err) {
       console.error(err)
     }
@@ -186,8 +229,8 @@ export default function Reportes() {
     const numberFmt = (n) => `Q ${Number(n || 0).toFixed(2)}`
     const itemsRows = (ordenSel.items || []).map((it) => {
       const nombre =
-        it.producto?.descripcion ||
-        it.servicio?.descripcion ||
+        it.producto?.nombre ||
+        it.servicio?.nombre ||
         it.nombre ||
         `Item #${it.id}`
       const sku = it.producto?.sku || it.codigo || ''
@@ -337,6 +380,11 @@ export default function Reportes() {
     cargarOrdenes(inicioIso, finIso)
   }, [range])
 
+  React.useEffect(() => {
+    cargarProductos()
+    cargarClientes()
+  }, [])
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Box sx={{ maxWidth: 1100, mx: 'auto', mt: 3 }}>
@@ -391,7 +439,9 @@ export default function Reportes() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {filtered.map((o) => (
+              {filtered.map((o) => {
+                const clienteInfo = o.cliente ?? clientesById[o.cliente_id]
+                return (
                 <TableRow
                   key={o.id}
                   hover
@@ -400,12 +450,13 @@ export default function Reportes() {
                 >
                   <TableCell>{dayjs(o.fecha).format('YYYY-MM-DD HH:mm')}</TableCell>
                   <TableCell>{o.codigo ?? o.id}</TableCell>
-                  <TableCell>{o.cliente?.nombre}</TableCell>
+                  <TableCell>{clienteInfo?.nombre || '-'}</TableCell>
                   <TableCell align="right">
                     Q {calcTotal(o.items || [], getOrdenDescuento(o)).toFixed(2)}
                   </TableCell>
                 </TableRow>
-              ))}
+                )
+              })}
               {filtered.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5}>
@@ -429,7 +480,7 @@ export default function Reportes() {
                 Fecha: {ordenSel ? dayjs(ordenSel.fecha).format('YYYY-MM-DD HH:mm') : '--'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Cliente: {ordenSel?.cliente?.nombre} — {ordenSel?.cliente?.telefono}
+                Cliente: {(ordenSel?.cliente ?? clientesById[ordenSel?.cliente_id])?.nombre || '-'} — {(ordenSel?.cliente ?? clientesById[ordenSel?.cliente_id])?.telefono || '-'}
               </Typography>
             </Stack>
 
@@ -447,6 +498,7 @@ export default function Reportes() {
               </TableHead>
               <TableBody>
                 {ordenSel?.items?.map((it) => {
+                  const productoInfo = it.producto ?? productosById[it.producto_id]
                   let nombre = ''
                   if (it.tipo === 'servicio') {
                     nombre =
@@ -455,21 +507,21 @@ export default function Reportes() {
                       `Servicio #${it.servicio_id ?? it.id}`
                   } else { // asumimos 'producto'
                     nombre =
-                      it.producto?.descripcion ||
+                      productoInfo?.nombre ||
+                      productoInfo?.descripcion ||
                       it.nombre ||
                       `Producto #${it.producto_id ?? it.id}`
                   }
 
                   // 🔹 SKU según tipo
-                  let sku = it.producto?.sku || ''
+                  let sku = productoInfo?.codigo || it.codigo || ''
 
                   const price =
-                    it.price ??                        // mock
-                    it.precio_unitario ??              // backend snapshot
-                    it.producto?.precio ??             // por si usas precio del producto
-                    it.servicio?.precio ?? 0
+                    getItemPrice(it) ||
+                    it.servicio?.precio ||
+                    0
 
-                  const qty = it.qty ?? it.cantidad ?? 1
+                  const qty = getItemQty(it)
 
                   return (
                     <TableRow key={it.id}>
