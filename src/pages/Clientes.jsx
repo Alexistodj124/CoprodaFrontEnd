@@ -42,6 +42,47 @@ const DEPARTAMENTOS_GUATEMALA = [
   'Zacapa',
 ]
 
+const DEPARTAMENTO_ABBR = {
+  'Alta Verapaz': 'AV',
+  'Baja Verapaz': 'BV',
+  'Chimaltenango': 'CHM',
+  'Chiquimula': 'CHQ',
+  'El Progreso': 'PRO',
+  'Escuintla': 'ESC',
+  'Guatemala': 'GUA',
+  'Huehuetenango': 'HUE',
+  'Izabal': 'IZA',
+  'Jalapa': 'JAL',
+  'Jutiapa': 'JUT',
+  'Petén': 'PET',
+  'Quetzaltenango': 'QUE',
+  'Quiché': 'QUI',
+  'Retalhuleu': 'RET',
+  'Sacatepéquez': 'SAC',
+  'San Marcos': 'SM',
+  'Santa Rosa': 'SR',
+  'Sololá': 'SOL',
+  'Suchitepéquez': 'SUC',
+  'Totonicapán': 'TOT',
+  'Zacapa': 'ZAC',
+}
+
+const getInitials = (name) => {
+  return (name || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0]?.toUpperCase() || '')
+    .join('')
+}
+
+const buildCodigoCliente = ({ nombre, departamento }) => {
+  const initials = getInitials(nombre)
+  const unique = Date.now().toString().slice(-6)
+  const deptoAbbr = DEPARTAMENTO_ABBR[departamento] || ''
+  return [initials, unique, deptoAbbr].filter(Boolean).join('')
+}
+
 export default function Clientes() {
   const [query, setQuery] = React.useState('')
   const [ordenes, setOrdenes] = React.useState([])
@@ -55,7 +96,6 @@ export default function Clientes() {
   })
   const [clienteDialog, setClienteDialog] = React.useState({
     open: false,
-    codigo: '',
     nombre: '',
     telefono: '',
     departamento: '',
@@ -253,7 +293,6 @@ export default function Clientes() {
   const handleOpenClienteDialog = () => {
     setClienteDialog({
       open: true,
-      codigo: '',
       nombre: '',
       telefono: '',
       departamento: '',
@@ -272,7 +311,6 @@ export default function Clientes() {
     e?.preventDefault()
     setClienteDialog((prev) => ({ ...prev, loading: true, error: '' }))
 
-    const codigo = (clienteDialog.codigo || '').trim()
     const nombre = (clienteDialog.nombre || '').trim()
     const telefono = clienteDialog.telefono.trim() || null
     const direccionInput = clienteDialog.direccion.trim()
@@ -282,14 +320,15 @@ export default function Clientes() {
       : (direccionInput || null)
     const clasificacion_precio = clienteDialog.clasificacion
 
-    if (!codigo || !nombre) {
+    if (!nombre) {
       setClienteDialog((prev) => ({
         ...prev,
         loading: false,
-        error: 'Código y nombre son requeridos',
+        error: 'Nombre es requerido',
       }))
       return
     }
+    const codigo = buildCodigoCliente({ nombre, departamento })
 
     try {
       const res = await fetch(`${API_BASE_URL}/clientes`, {
@@ -695,12 +734,6 @@ export default function Clientes() {
         <DialogTitle>Nuevo cliente</DialogTitle>
         <form onSubmit={handleCrearCliente}>
           <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              label="Código"
-              value={clienteDialog.codigo}
-              onChange={(e) => setClienteDialog((prev) => ({ ...prev, codigo: e.target.value }))}
-              required
-            />
             <TextField
               label="Nombre"
               value={clienteDialog.nombre}
