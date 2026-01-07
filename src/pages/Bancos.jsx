@@ -14,15 +14,25 @@ import {
   TableCell,
   Divider,
 } from '@mui/material'
+import { API_BASE_URL } from '../config/api'
 
-const seedPagos = [
-  { id: 'mock-1', fecha: '2024-10-01', referencia: 'DEP-001', banco: 'BANTRAB', monto: 150.0, nota: 'Deposito en ventanilla', asignado: false },
-  { id: 'mock-2', fecha: '2024-10-05', referencia: 'TRF-842', banco: 'BAC', monto: 320.5, nota: 'Transferencia cliente contado', asignado: true },
-  { id: 'mock-3', fecha: '2024-10-12', referencia: 'CHK-554', banco: 'G&T', monto: 80.0, nota: 'Cheque', asignado: false },
+const BANCOS_GUATEMALA = [
+  'Banco Industrial',
+  'Banrural',
+  'G&T Continental',
+  'BAC Credomatic',
+  'Banco Agromercantil (BAM)',
+  'Banco Internacional',
+  'Banco Promerica',
+  'Banco de Antigua',
+  'Banco Ficohsa',
+  'Bantrab',
+  'Banco Azteca',
+  'Banco Inmobiliario',
 ]
 
 export default function Bancos() {
-  const [pagos, setPagos] = React.useState(seedPagos)
+  const [pagos, setPagos] = React.useState([])
   const [filtroAsignado, setFiltroAsignado] = React.useState('todos')
   const [form, setForm] = React.useState({
     fecha: new Date().toISOString().slice(0, 10),
@@ -31,30 +41,74 @@ export default function Bancos() {
     monto: '',
     nota: '',
   })
+  const [saving, setSaving] = React.useState(false)
+  const [error, setError] = React.useState('')
+
+  React.useEffect(() => {
+    const cargarPagos = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/bancos`)
+        if (!res.ok) throw new Error('Error al obtener pagos')
+        const data = await res.json()
+        setPagos(data || [])
+      } catch (err) {
+        console.error(err)
+      }
+    }
+
+    cargarPagos()
+  }, [])
 
   const handleChange = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }))
   }
 
-  const handleAddPago = () => {
-    if (!form.referencia.trim() || !form.monto) return
-    const nuevo = {
-      id: `local-${Date.now()}`,
-      fecha: form.fecha || new Date().toISOString().slice(0, 10),
-      referencia: form.referencia.trim(),
-      banco: form.banco.trim(),
-      monto: Number(form.monto) || 0,
-      nota: form.nota.trim(),
-      asignado: false,
+  const handleAddPago = async () => {
+    if (!form.referencia.trim() || !form.monto || !form.banco.trim()) return
+    if (saving) return
+    try {
+      setSaving(true)
+      setError('')
+      const payload = {
+        fecha: form.fecha || new Date().toISOString().slice(0, 10),
+        referencia: form.referencia.trim(),
+        banco: form.banco.trim(),
+        monto: Number(form.monto) || 0,
+        nota: form.nota.trim() || null,
+        asignado: false,
+      }
+      const res = await fetch(`${API_BASE_URL}/bancos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const txt = await res.text()
+        let msg = 'No se pudo crear el pago'
+        try {
+          const parsed = JSON.parse(txt)
+          msg = parsed.error || msg
+        } catch (_) {
+          // noop
+        }
+        setError(msg)
+        return
+      }
+      const created = await res.json()
+      setPagos((prev) => [created, ...prev])
+      setForm((prev) => ({
+        ...prev,
+        referencia: '',
+        banco: '',
+        monto: '',
+        nota: '',
+      }))
+    } catch (err) {
+      console.error(err)
+      setError('Error de red al crear el pago')
+    } finally {
+      setSaving(false)
     }
-    setPagos((prev) => [nuevo, ...prev])
-    setForm((prev) => ({
-      ...prev,
-      referencia: '',
-      banco: '',
-      monto: '',
-      nota: '',
-    }))
   }
 
   const pagosFiltrados = React.useMemo(() => {
@@ -96,11 +150,18 @@ export default function Bancos() {
             required
           />
           <TextField
+            select
             label="Banco"
             value={form.banco}
             onChange={handleChange('banco')}
             sx={{ minWidth: 160 }}
-          />
+          >
+            {BANCOS_GUATEMALA.map((banco) => (
+              <MenuItem key={banco} value={banco}>
+                {banco}
+              </MenuItem>
+            ))}
+          </TextField>
           <TextField
             label="Monto (Q)"
             type="number"
@@ -119,11 +180,16 @@ export default function Bancos() {
           <Button
             variant="contained"
             onClick={handleAddPago}
-            disabled={!form.referencia.trim() || !form.monto}
+            disabled={!form.referencia.trim() || !form.monto || !form.banco.trim() || saving}
           >
             Guardar pago
           </Button>
         </Stack>
+        {error && (
+          <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+            {error}
+          </Typography>
+        )}
       </Paper>
 
       <Paper sx={{ p: 2, borderRadius: 3 }}>
