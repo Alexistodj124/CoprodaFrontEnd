@@ -38,20 +38,6 @@ const TIPO_PAGO_GRUPOS = [
   { id: 'contado', label: 'Contado' },
 ]
 
-const TIPO_PAGO_DETALLES = {
-  credito: [
-    { id: 1, label: '7 días' },
-    { id: 2, label: '15 días' },
-    { id: 3, label: '22 días' },
-    { id: 4, label: '30 días' },
-  ],
-  contado: [
-    { id: 5, label: 'Efectivo' },
-    { id: 6, label: 'Transferencia' },
-    { id: 7, label: 'Cheque' },
-  ],
-}
-
 const tipoPOS = [
   { id: 'all', label: 'Todo' },
   { id: 'serv', label: 'Servicios' },
@@ -168,6 +154,7 @@ export default function Inventory() {
   const [categoriasServicios, setCategoriasServicios] = React.useState([])
   const [productos, setProductos] = React.useState([])
   const [empleadas, setEmpleadas] = React.useState([])
+  const [tiposPago, setTiposPago] = React.useState([])
 
   const [clientes, setClientes] = React.useState([])          // lista desde el backend
   const [cliente, setCliente] = React.useState({ nombre: '', telefono: '', email: '', nit: '' })
@@ -197,16 +184,34 @@ export default function Inventory() {
   }
 
 
-  const pagoDetalleOpciones = React.useMemo(
-    () => TIPO_PAGO_DETALLES[venta.tipoPago] || [],
-    [venta.tipoPago]
-  )
+  const getTipoPagoLabel = (detalle) => detalle?.nombre ?? detalle?.label ?? ''
+  const pagoDetalleOpciones = React.useMemo(() => {
+    const grupoSeleccionado = (venta.tipoPago || '').toLowerCase()
+    if (!grupoSeleccionado) return []
+
+    return tiposPago.filter((detalle) => {
+      const grupo = String(
+        detalle?.tipo ??
+        detalle?.grupo ??
+        detalle?.categoria ??
+        detalle?.clase ??
+        ''
+      ).toLowerCase()
+      const nombre = getTipoPagoLabel(detalle).toLowerCase()
+      const descripcion = String(detalle?.descripcion ?? '').toLowerCase()
+      return (
+        grupo.includes(grupoSeleccionado) ||
+        nombre.includes(grupoSeleccionado) ||
+        descripcion.includes(grupoSeleccionado)
+      )
+    })
+  }, [tiposPago, venta.tipoPago])
   const pagoDetalleSeleccionado = pagoDetalleOpciones.find(
     (opt) => String(opt.id) === String(venta.tipoPagoDetalle)
   )
   const requiereReferencia =
-    pagoDetalleSeleccionado?.label === 'Transferencia' ||
-    pagoDetalleSeleccionado?.label === 'Cheque'
+    getTipoPagoLabel(pagoDetalleSeleccionado).toLowerCase() === 'transferencia' ||
+    getTipoPagoLabel(pagoDetalleSeleccionado).toLowerCase() === 'cheque'
     
   // Snackbar de confirmación
   const [snack, setSnack] = React.useState({ open: false, msg: '', severity: 'success' })
@@ -298,6 +303,16 @@ export default function Inventory() {
       if (!res.ok) throw new Error('Error al obtener clientes')
       const data = await res.json()
       setClientes(data) // array de { id, nombre, descripcion, activo }
+    } catch (err) {
+      console.error(err)
+    }
+  }
+  const cargarTiposPago = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/tipos_pago`)
+      if (!res.ok) throw new Error('Error al obtener tipos de pago')
+      const data = await res.json()
+      setTiposPago(data) // array de { id, nombre, tipo, ... }
     } catch (err) {
       console.error(err)
     }
@@ -720,6 +735,7 @@ export default function Inventory() {
       cargarCategoriasProductos()
       cargarProductos()
       cargarClientes()
+      cargarTiposPago()
     }, [])
 
   React.useEffect(() => {
@@ -1082,7 +1098,7 @@ export default function Inventory() {
               >
                 {pagoDetalleOpciones.map((detalle) => (
                   <MenuItem key={detalle.id} value={detalle.id}>
-                    {detalle.label}
+                    {getTipoPagoLabel(detalle)}
                   </MenuItem>
                 ))}
               </TextField>
