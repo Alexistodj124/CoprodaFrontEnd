@@ -17,6 +17,31 @@ function calcTotal(items = []) {
   }, 0)
 }
 
+const DEPARTAMENTOS_GUATEMALA = [
+  'Alta Verapaz',
+  'Baja Verapaz',
+  'Chimaltenango',
+  'Chiquimula',
+  'El Progreso',
+  'Escuintla',
+  'Guatemala',
+  'Huehuetenango',
+  'Izabal',
+  'Jalapa',
+  'Jutiapa',
+  'Petén',
+  'Quetzaltenango',
+  'Quiché',
+  'Retalhuleu',
+  'Sacatepéquez',
+  'San Marcos',
+  'Santa Rosa',
+  'Sololá',
+  'Suchitepéquez',
+  'Totonicapán',
+  'Zacapa',
+]
+
 export default function Clientes() {
   const [query, setQuery] = React.useState('')
   const [ordenes, setOrdenes] = React.useState([])
@@ -33,6 +58,7 @@ export default function Clientes() {
     codigo: '',
     nombre: '',
     telefono: '',
+    departamento: '',
     direccion: '',
     clasificacion: 'cf',
     loading: false,
@@ -230,6 +256,7 @@ export default function Clientes() {
       codigo: '',
       nombre: '',
       telefono: '',
+      departamento: '',
       direccion: '',
       clasificacion: 'cf',
       loading: false,
@@ -248,7 +275,11 @@ export default function Clientes() {
     const codigo = (clienteDialog.codigo || '').trim()
     const nombre = (clienteDialog.nombre || '').trim()
     const telefono = clienteDialog.telefono.trim() || null
-    const direccion = clienteDialog.direccion.trim() || null
+    const direccionInput = clienteDialog.direccion.trim()
+    const departamento = (clienteDialog.departamento || '').trim()
+    const direccion = departamento
+      ? [departamento, direccionInput].filter(Boolean).join(', ')
+      : (direccionInput || null)
     const clasificacion_precio = clienteDialog.clasificacion
 
     if (!codigo || !nombre) {
@@ -681,6 +712,21 @@ export default function Clientes() {
               value={clienteDialog.telefono}
               onChange={(e) => setClienteDialog((prev) => ({ ...prev, telefono: e.target.value }))}
             />
+            <TextField
+              select
+              label="Departamento"
+              value={clienteDialog.departamento}
+              onChange={(e) =>
+                setClienteDialog((prev) => ({ ...prev, departamento: e.target.value }))
+              }
+              placeholder="Selecciona departamento"
+            >
+              {DEPARTAMENTOS_GUATEMALA.map((depto) => (
+                <MenuItem key={depto} value={depto}>
+                  {depto}
+                </MenuItem>
+              ))}
+            </TextField>
             <TextField
               label="Dirección"
               value={clienteDialog.direccion}
