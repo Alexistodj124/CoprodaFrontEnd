@@ -83,6 +83,7 @@ export default function Reportes() {
   const [productosById, setProductosById] = React.useState({})
   const [clientesById, setClientesById] = React.useState({})
   const [tiposPago, setTiposPago] = React.useState([])
+  const [estadosOrden, setEstadosOrden] = React.useState([])
     const [range, setRange] = React.useState([
     dayjs().startOf('month'),
     dayjs().endOf('day'),
@@ -91,12 +92,14 @@ export default function Reportes() {
   const [confirmadas, setConfirmadas] = React.useState({})
 
   const filtered = React.useMemo(() => {
-  // usa SOLO backend
-    const source = ordenes
-  
-    // si no hay empleada seleccionada, devuelve todas  
-    return source
-  }, [ordenes])
+    const estadoPedido = estadosOrden.find(
+      (estado) => String(estado?.nombre || '').toLowerCase() === 'pedido'
+    )
+    if (!estadoPedido?.id) return ordenes
+    return ordenes.filter(
+      (orden) => String(orden?.estado_id) === String(estadoPedido.id)
+    )
+  }, [ordenes, estadosOrden])
 
 
   // 🔹 GET /ordenes?inicio=...&fin=...
@@ -156,6 +159,17 @@ export default function Reportes() {
       if (!res.ok) throw new Error('Error al obtener tipos de pago')
       const data = await res.json()
       setTiposPago(data || [])
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const cargarEstadosOrden = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/estados_orden`)
+      if (!res.ok) throw new Error('Error al obtener estados de orden')
+      const data = await res.json()
+      setEstadosOrden(data || [])
     } catch (err) {
       console.error(err)
     }
@@ -239,9 +253,22 @@ export default function Reportes() {
   const totalOrdenSel = calcTotal(ordenSel?.items || [], descuentoOrdenSel)
   const ordenEstaConfirmada = ordenSel ? !!confirmadas[ordenSel.id] : false
 
-  const handleConfirmOrden = () => {
+  const handleConfirmOrden = async () => {
     if (!ordenSel?.id) return
-    setConfirmadas(prev => ({ ...prev, [ordenSel.id]: true }))
+    try {
+      const res = await fetch(`${API_BASE_URL}/ordenes/${ordenSel.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado_id: 2 }),
+      })
+      if (!res.ok) throw new Error('Error al confirmar orden')
+      const updated = await res.json()
+      setOrdenes((prev) => prev.map((o) => (o.id === ordenSel.id ? updated : o)))
+      setOrdenSel(updated)
+      setConfirmadas(prev => ({ ...prev, [ordenSel.id]: true }))
+    } catch (err) {
+      console.error(err)
+    }
   }
 
   const handlePrintOrden = () => {
@@ -470,6 +497,7 @@ export default function Reportes() {
     cargarProductos()
     cargarClientes()
     cargarTiposPago()
+    cargarEstadosOrden()
   }, [])
 
   return (
@@ -503,11 +531,6 @@ export default function Reportes() {
             <Chip
               label={`Total en el período: Q ${totalPeriodo.toFixed(2)}`}
               color="primary"
-              sx={{ fontWeight: 600 }}
-            />
-            <Chip
-              label={`Ganancia en el periodo: Q ${gananciaPeriodo.toFixed(2)}`}
-              color="success"
               sx={{ fontWeight: 600 }}
             />
           </Stack>
