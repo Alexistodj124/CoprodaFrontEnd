@@ -205,7 +205,7 @@ export default function Reportes() {
       `
     }).join('')
 
-    const copyTypes = ['CLIENTE', 'BODEGA']
+    const copyTypes = ['CLIENTE', 'BODEGA', 'VENTAS']
     const fechaTexto = fmtDate(ordenSel.fecha)
     const codigo = ordenSel.codigo ?? ordenSel.id ?? ''
     const clienteNombre = ordenSel.cliente?.nombre ?? ''
@@ -214,109 +214,142 @@ export default function Reportes() {
     const pago = (ordenSel.forma_pago || ordenSel.metodo_pago || ordenSel.pago || 'CONTADO').toString().toUpperCase()
 
     const copiesHtml = copyTypes.map((tipo) => `
-      <div class="hoja">
-        <div class="encabezado">
-          <div class="logo">COPRODA</div>
-          <div class="empresa">
-            <div class="title">COMPAÑÍA PROCESADORA DE ALUMINIO, S.A.</div>
-            <div class="sub">
-              ALUMINIO DE CALIDAD QUE PERDURA<br/>
-              PRODUCTO CENTROAMERICANO HECHO EN GUATEMALA<br/>
-              KM. 32 CARRETERA AL SALVADOR, FRACCIÓN 8, SAN JOSÉ EL CHORO, PROYECTO INDUSTRIAL EL ALTO, VILLA CANALES<br/>
-              TELEFONO: 5852-8466
+          <div class="hoja">
+            <div class="watermark">
+              <img src="${logoCoproda}" alt="Coproda" />
+            </div>
+            <div class="encabezado">
+              <div class="empresa">
+                <div class="title">COMPAÑÍA PROCESADORA DE ALUMINIO, S.A.</div>
+                <div class="sub">
+                  ALUMINIO DE CALIDAD QUE PERDURA<br/>
+                  PRODUCTO CENTROAMERICANO HECHO EN GUATEMALA<br/>
+                  KM. 32 CARRETERA AL SALVADOR, FRACCIÓN 8, SAN JOSÉ EL CHORO, PROYECTO INDUSTRIAL EL ALTO, VILLA CANALES<br/>
+                  TELEFONO: 5852-8466
+                </div>
+              </div>
+              <div class="caja">
+                <div class="label">ENVIO NO.</div>
+                <div class="valor">${codigo}</div>
+                <div class="label" style="margin-top:4px;">FECHA:</div>
+                <div class="valor">${fechaTexto}</div>
+              </div>
+            </div>
+    
+            <div class="folio">
+              <span>CODIGO:</span>
+              <span class="valor">${codigo}</span>
+              <span class="copy">${tipo}</span>
+            </div>
+    
+            <div class="cliente">
+              <div><strong>CLIENTE:</strong> ${clienteNombre}</div>
+              <div><strong>DIRECCION:</strong> ${clienteDir || '______________________________'}</div>
+              <div><strong>TELEFONO:</strong> ${clienteTel || '________________'}</div>
+            </div>
+    
+            <div class="datos">
+              <div><strong>NIT:</strong> __________</div>
+              <div><strong>PAGO:</strong> ${pago}</div>
+              <div><strong>VENCIMIENTO:</strong> __________</div>
+            </div>
+    
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th width="10%">CANTIDAD</th>
+                  <th width="15%">COD.PROD.</th>
+                  <th>DESCRIPCION</th>
+                  <th width="15%">P/UNITARIO</th>
+                  <th width="15%">SUB-TOTAL</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsRows || '<tr><td colspan="5" class="center">Sin items</td></tr>'}
+              </tbody>
+            </table>
+    
+            <div class="totales">
+              <div>TOTAL EN LETRAS: ${totalEnLetras || '_______________________________'}</div>
+              <div class="total-box">
+                <span>TOTAL</span>
+                <span class="cantidad">${numberFmt(totalOrdenSel)}</span>
+              </div>
+            </div>
+    
+            <div class="firmas">
+              <div class="firma">
+                <div class="firma-linea"></div>
+                <div>FIRMA DEPTO. VENTAS:</div>
+              </div>
+              <div class="firma">
+                <div class="firma-linea"></div>
+                <div>FIRMA ACEPTACION CLIENTE:</div>
+              </div>
             </div>
           </div>
-          <div class="caja">
-            <div class="label">ENVIO NO.</div>
-            <div class="valor">${codigo}</div>
-            <div class="label" style="margin-top:4px;">FECHA:</div>
-            <div class="valor">${fechaTexto}</div>
-          </div>
-        </div>
-
-        <div class="folio">
-          <span>CODIGO:</span>
-          <span class="valor">${codigo}</span>
-          <span class="copy">${tipo}</span>
-        </div>
-
-        <div class="cliente">
-          <div><strong>CLIENTE:</strong> ${clienteNombre}</div>
-          <div><strong>DIRECCION:</strong> ${clienteDir || '______________________________'}</div>
-          <div><strong>TELEFONO:</strong> ${clienteTel || '________________'}</div>
-        </div>
-
-        <div class="datos">
-          <div><strong>NIT:</strong> __________</div>
-          <div><strong>PAGO:</strong> ${pago}</div>
-          <div><strong>VENCIMIENTO:</strong> __________</div>
-        </div>
-
-        <table class="tabla">
-          <thead>
-            <tr>
-              <th width="10%">CANTIDAD</th>
-              <th width="15%">COD.PROD.</th>
-              <th>DESCRIPCION</th>
-              <th width="15%">P/UNITARIO</th>
-              <th width="15%">SUB-TOTAL</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${itemsRows || '<tr><td colspan="5" class="center">Sin items</td></tr>'}
-          </tbody>
-        </table>
-
-        <div class="totales">
-          <div>TOTAL EN LETRAS: _________________________________</div>
-          <div class="total-box">
-            <span>TOTAL</span>
-            <span class="cantidad">${numberFmt(totalOrdenSel)}</span>
-          </div>
-        </div>
-
-        <div class="firmas">
-          <div>FIRMA DEPTO. VENTAS:</div>
-          <div>FIRMA ACEPTACION CLIENTE:</div>
-        </div>
-      </div>
-    `).join('')
-
-    const html = `
-      <html>
-        <head>
-          <title>Orden ${codigo}</title>
-          <style>
-            @page { margin: 15mm; }
-            body { font-family: 'Times New Roman', serif; font-size: 12px; margin: 0; }
-            .hoja { border: 1px solid #222; padding: 10px 12px 14px; margin-bottom: 16px; page-break-inside: avoid; }
-            .encabezado { display: grid; grid-template-columns: 80px 1fr 150px; gap: 8px; align-items: center; }
-            .logo { font-weight: 900; font-size: 18px; text-align: center; border: 2px solid #b00; color: #b00; padding: 10px 6px; border-radius: 8px; }
-            .empresa .title { font-weight: 900; text-align: center; font-size: 14px; }
-            .empresa .sub { text-align: center; font-size: 10px; line-height: 1.3; margin-top: 2px; }
-            .caja { border: 1px solid #000; padding: 6px; font-size: 11px; }
-            .caja .label { font-weight: 700; }
-            .caja .valor { border: 1px solid #000; padding: 3px 4px; text-align: center; margin-top: 2px; }
-            .folio { display: flex; align-items: center; gap: 8px; margin: 10px 0 6px; font-weight: 700; }
-            .folio .valor { padding: 2px 6px; border: 1px solid #000; }
-            .folio .copy { margin-left: auto; padding: 4px 12px; border: 1px solid #c00; font-size: 14px; font-weight: 900; }
-            .cliente { display: grid; grid-template-columns: 1fr; row-gap: 4px; margin-bottom: 8px; }
-            .datos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; font-weight: 700; }
-            .tabla { width: 100%; border-collapse: collapse; font-size: 12px; }
-            .tabla th, .tabla td { border: 1px solid #000; padding: 6px 5px; }
-            .tabla th { text-align: center; font-weight: 700; }
-            .center { text-align: center; }
-            .totales { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
-            .total-box { display: flex; align-items: center; gap: 10px; border: 1px solid #000; padding: 6px 10px; font-weight: 900; }
-            .cantidad { font-size: 16px; }
-            .firmas { display: flex; justify-content: space-between; margin-top: 20px; font-weight: 700; }
-          </style>
-        </head>
-        <body>
-          ${copiesHtml}
-        </body>
-      </html>
-    `
+        `).join('')
+    
+        const html = `
+          <html>
+            <head>
+              <title>Orden ${codigo}</title>
+              <style>
+                @page { margin: 15mm; }
+                body { font-family: 'Times New Roman', serif; font-size: 12px; margin: 0; }
+                *, *::before, *::after { box-sizing: border-box; }
+                .watermark {
+                  position: absolute;
+                  inset: 0;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  opacity: 0.08;
+                  pointer-events: none;
+                  z-index: 0;
+                }
+                .watermark img {
+                  width: 100%;
+                  max-width: 1000px;
+                  height: auto;
+                  filter: grayscale(100%);
+                }
+                .hoja {
+                  border: 1px solid #222;
+                  padding: 10px 12px 14px;
+                  margin-bottom: 16px;
+                  page-break-inside: avoid;
+                  position: relative;
+                  width: calc(100% - 2px);
+                }
+                .encabezado { display: grid; grid-template-columns: 1fr 150px; gap: 8px; align-items: center; }
+                .empresa .title { font-weight: 900; text-align: center; font-size: 14px; }
+                .empresa .sub { text-align: center; font-size: 10px; line-height: 1.3; margin-top: 2px; }
+                .caja { border: 1px solid #000; padding: 6px; font-size: 11px; }
+                .caja .label { font-weight: 700; }
+                .caja .valor { border: 1px solid #000; padding: 3px 4px; text-align: center; margin-top: 2px; }
+                .folio { display: flex; align-items: center; gap: 8px; margin: 10px 0 6px; font-weight: 700; }
+                .folio .valor { padding: 2px 6px; border: 1px solid #000; }
+                .folio .copy { margin-left: auto; padding: 4px 12px; border: 1px solid #c00; font-size: 14px; font-weight: 900; }
+                .cliente { display: grid; grid-template-columns: 1fr; row-gap: 4px; margin-bottom: 8px; }
+                .datos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; font-weight: 700; }
+                .tabla { width: 100%; border-collapse: collapse; font-size: 12px; }
+                .tabla th, .tabla td { border: 1px solid #000; padding: 6px 5px; }
+                .tabla th { text-align: center; font-weight: 700; }
+                .center { text-align: center; }
+                .totales { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+                .total-box { display: flex; align-items: center; gap: 10px; border: 1px solid #000; padding: 6px 10px; font-weight: 900; }
+                .cantidad { font-size: 16px; }
+                .firmas { display: flex; justify-content: space-between; margin-top: 20px; font-weight: 700; gap: 20px; }
+                .firma { flex: 1; }
+                .firma-linea { border-top: 1px solid #000; margin: 65px 0 6px; }
+              </style>
+            </head>
+            <body>
+              ${copiesHtml}
+            </body>
+          </html>
+        `
 
     const w = window.open('', '_blank', 'width=400,height=600')
     if (!w) return
