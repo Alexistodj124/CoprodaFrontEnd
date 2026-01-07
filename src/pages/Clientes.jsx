@@ -90,6 +90,7 @@ export default function Clientes() {
   const [estadosOrden, setEstadosOrden] = React.useState([])
   const [productosById, setProductosById] = React.useState({})
   const [tiposPago, setTiposPago] = React.useState([])
+  const [bancos, setBancos] = React.useState([])
   const [clienteSel, setClienteSel] = React.useState(null)   // objeto cliente agregado
   const [ordenSel, setOrdenSel] = React.useState(null)       // objeto orden para el diálogo
   const [abonoDialog, setAbonoDialog] = React.useState({
@@ -167,7 +168,7 @@ export default function Clientes() {
     cargarProductos()
   }, [])
 
-  // Cargar tipos de pago desde el backend
+  // Cargar tipos de pago y bancos desde el backend
   React.useEffect(() => {
     const cargarTiposPago = async () => {
       try {
@@ -184,7 +185,23 @@ export default function Clientes() {
       }
     }
 
+    const cargarBancos = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/bancos`)
+        if (!res.ok) {
+          const txt = await res.text()
+          console.error('Error backend /bancos:', txt)
+          return
+        }
+        const data = await res.json()
+        setBancos(data || [])
+      } catch (err) {
+        console.error('Error de red al cargar bancos:', err)
+      }
+    }
+
     cargarTiposPago()
+    cargarBancos()
   }, [])
 
   // Cargar estados de orden desde el backend
@@ -317,23 +334,15 @@ export default function Clientes() {
   }, [tiposPago])
 
   const pagosPendientesCliente = React.useMemo(() => {
-    const c = abonoDialog.cliente
-    if (!c) return []
-
-    const fromClient =
-      c.pagosPendientes ||
-      c.pagos_pendientes ||
-      c.pagos
-
-    if (Array.isArray(fromClient) && fromClient.length) return fromClient
-
-    // Mock data to show UI when backend no responde
-    return [
-      { id: 'mock-1', fecha: '2024-10-01', referencia: 'REF-001', cantidad: 150.0 },
-      { id: 'mock-2', fecha: '2024-10-05', referencia: 'REF-002', cantidad: 320.5 },
-      { id: 'mock-3', fecha: '2024-10-12', referencia: 'REF-003', cantidad: 80.0 },
-    ]
-  }, [abonoDialog.cliente])
+    return (bancos || [])
+      .filter((b) => b?.asignado === false)
+      .map((b) => ({
+        id: b.id,
+        fecha: b.fecha,
+        referencia: b.referencia || b.banco || '',
+        cantidad: b.monto ?? 0,
+      }))
+  }, [bancos])
 
   const totalSeleccionadoAbono = React.useMemo(() => {
     if (!abonoDialog.selected || pagosPendientesCliente.length === 0) return 0
