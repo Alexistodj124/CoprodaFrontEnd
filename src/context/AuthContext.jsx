@@ -16,7 +16,7 @@ export function AuthProvider({ children }) {
 
   // 🟢 login: llama a tu /auth/login
   const login = async (username, password) => {
-    const res = await fetch(`http://3.140.209.59/api/auth/login`, {
+    const res = await fetch(`https://coprodasa.com/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
