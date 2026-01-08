@@ -23,7 +23,7 @@ export default function SignIn() {
       setError('')
       const user = await login(username, password)
       // si quieres, puedes mandar a ventas o a home:
-      navigate('/ventas', { replace: true })
+      navigate('/', { replace: true })
     } catch (err) {
       console.error(err)
       setError('Usuario o contraseña incorrectos')
