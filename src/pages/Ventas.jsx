@@ -719,7 +719,7 @@ export default function Inventory() {
               disabled={cart.length === 0 || !hasClienteSeleccionado}
               onClick={handleOpenCheckout}
             >
-              Finalizar compra
+              Finalizar Venta
             </Button>
           </Stack>
         </Box>

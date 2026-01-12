@@ -13,7 +13,9 @@ import {
   TableRow,
   TableCell,
   Divider,
+  IconButton,
 } from '@mui/material'
+import DeleteIcon from '@mui/icons-material/Delete'
 import { API_BASE_URL } from '../config/api'
 
 const BANCOS_GUATEMALA = [
@@ -42,6 +44,7 @@ export default function Bancos() {
     nota: '',
   })
   const [saving, setSaving] = React.useState(false)
+  const [deletingId, setDeletingId] = React.useState(null)
   const [error, setError] = React.useState('')
 
   React.useEffect(() => {
@@ -108,6 +111,25 @@ export default function Bancos() {
       setError('Error de red al crear el pago')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleDeletePago = async (pago) => {
+    if (!pago?.id || pago?.asignado) return
+    const confirmed = window.confirm('¿Eliminar este pago no asignado?')
+    if (!confirmed) return
+    try {
+      setDeletingId(pago.id)
+      const res = await fetch(`${API_BASE_URL}/bancos/${pago.id}`, {
+        method: 'DELETE',
+      })
+      if (!res.ok) throw new Error('No se pudo eliminar el pago')
+      setPagos((prev) => prev.filter((p) => p.id !== pago.id))
+    } catch (err) {
+      console.error(err)
+      setError('No se pudo eliminar el pago')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -225,6 +247,7 @@ export default function Bancos() {
               <TableCell>Nota</TableCell>
               <TableCell>Asignado</TableCell>
               <TableCell align="right">Monto (Q)</TableCell>
+              <TableCell align="center">Acciones</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -249,11 +272,24 @@ export default function Bancos() {
                   {p.asignado ? 'Si' : 'No'}
                 </TableCell>
                 <TableCell align="right">Q {(Number(p.monto) || 0).toFixed(2)}</TableCell>
+                <TableCell align="center">
+                  {!p.asignado && (
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => handleDeletePago(p)}
+                      disabled={deletingId === p.id}
+                      aria-label="Eliminar pago"
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  )}
+                </TableCell>
               </TableRow>
             ))}
             {pagosFiltrados.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6}>
+                <TableCell colSpan={7}>
                   <Typography align="center" color="text.secondary">
                     No hay pagos registrados.
                   </Typography>

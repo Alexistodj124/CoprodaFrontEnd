@@ -618,7 +618,7 @@ export default function Clientes() {
               <TableRow>
                 <TableCell>Cliente</TableCell>
                 <TableCell>Teléfono</TableCell>
-                <TableCell align="right">Órdenes</TableCell>
+                <TableCell align="right">Envios</TableCell>
                 <TableCell align="right">Total</TableCell>
                 <TableCell>Última compra</TableCell>
               </TableRow>
@@ -778,7 +778,7 @@ export default function Clientes() {
             <TableHead>
               <TableRow>
                 <TableCell>Fecha</TableCell>
-                <TableCell>No. Orden</TableCell>
+                <TableCell>No. Envio</TableCell>
                 <TableCell align="right">Días crédito</TableCell>
                 <TableCell align="right">Total</TableCell>
                 <TableCell align="right">Restante</TableCell>
