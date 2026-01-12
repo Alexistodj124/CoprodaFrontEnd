@@ -7,6 +7,7 @@ import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
+import EditIcon from '@mui/icons-material/Edit'
 import { API_BASE_URL } from '../config/api'
 import { useAuth } from '../context/AuthContext'
 
@@ -47,7 +48,7 @@ const tipoPOS = [
 
 
 export default function Inventory() {
-  const { user } = useAuth()
+  const { user, hasAnyPermiso } = useAuth()
   const DEFAULT_ESTADO_ID = 1
   const getPrecioForCliente = (product, clasificacion) => {
     if (!product) return 0
@@ -159,17 +160,31 @@ export default function Inventory() {
     
   // Snackbar de confirmación
   const [snack, setSnack] = React.useState({ open: false, msg: '', severity: 'success' })
+  const [editDialog, setEditDialog] = React.useState({
+    open: false,
+    loading: false,
+    error: '',
+    id: null,
+    nombre: '',
+    codigo: '',
+    precio_cf: '',
+    precio_minorista: '',
+    precio_mayorista: '',
+    activo: true,
+  })
 
   // const filtered = React.useMemo(() => {
   //   if (categoriasProductos.id === 'all') return productos
   //   return productos.filter(p => p.categoria_id === categoriasProductos.id)
   // }, [categoriasProductos.id])
   const productosConPrecio = React.useMemo(() => (
-    productos.map((p) => ({
-      ...p,
-      descripcion: p.descripcion ?? p.nombre ?? '',
-      precio: getPrecioForCliente(p, clasificacionSeleccionada),
-    }))
+    productos
+      .filter((p) => p.activo !== false)
+      .map((p) => ({
+        ...p,
+        descripcion: p.descripcion ?? p.nombre ?? '',
+        precio: getPrecioForCliente(p, clasificacionSeleccionada),
+      }))
   ), [productos, clasificacionSeleccionada])
 
   const filtered = React.useMemo(() => {
@@ -378,6 +393,78 @@ export default function Inventory() {
     setOpenDialog(false)
   }
 
+  const canEditProductos = hasAnyPermiso(['Maestro'])
+
+  const handleOpenEditProducto = (producto) => {
+    if (!producto) return
+    setEditDialog({
+      open: true,
+      loading: false,
+      error: '',
+      id: producto.id,
+      nombre: producto.nombre ?? producto.descripcion ?? '',
+      codigo: producto.codigo ?? '',
+      precio_cf: producto.precio_cf ?? '',
+      precio_minorista: producto.precio_minorista ?? '',
+      precio_mayorista: producto.precio_mayorista ?? '',
+      activo: producto.activo ?? true,
+    })
+  }
+
+  const handleCloseEditProducto = () => {
+    setEditDialog((prev) => ({ ...prev, open: false, loading: false, error: '' }))
+  }
+
+  const handleSaveProducto = async () => {
+    if (!editDialog.id) return
+    const nombre = String(editDialog.nombre || '').trim()
+    const codigo = String(editDialog.codigo || '').trim()
+    if (!nombre || !codigo) {
+      setEditDialog((prev) => ({
+        ...prev,
+        error: 'Nombre y código son requeridos',
+      }))
+      return
+    }
+
+    const payload = { nombre, codigo }
+    if (editDialog.precio_cf !== '') payload.precio_cf = editDialog.precio_cf
+    if (editDialog.precio_minorista !== '') payload.precio_minorista = editDialog.precio_minorista
+    if (editDialog.precio_mayorista !== '') payload.precio_mayorista = editDialog.precio_mayorista
+    payload.activo = !!editDialog.activo
+
+    try {
+      setEditDialog((prev) => ({ ...prev, loading: true, error: '' }))
+      const res = await fetch(`${API_BASE_URL}/productos/${editDialog.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const txt = await res.text()
+        let msg = 'No se pudo actualizar el producto'
+        try {
+          const parsed = JSON.parse(txt)
+          msg = parsed.error || msg
+        } catch (_) {
+          // noop
+        }
+        setEditDialog((prev) => ({ ...prev, loading: false, error: msg }))
+        return
+      }
+      const updated = await res.json()
+      setProductos((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
+      setEditDialog((prev) => ({ ...prev, open: false, loading: false, error: '' }))
+    } catch (err) {
+      console.error('Error actualizando producto:', err)
+      setEditDialog((prev) => ({
+        ...prev,
+        loading: false,
+        error: 'Error de red al actualizar el producto',
+      }))
+    }
+  }
+
   const validate = () => {
     let ok = true
     const e = { nombre: '', telefono: '' }
@@ -579,6 +666,7 @@ export default function Inventory() {
                 <TableCell>SKU</TableCell>
                 <TableCell>Producto</TableCell>
                 <TableCell align="right">Precio</TableCell>
+                {canEditProductos && <TableCell align="center">Acciones</TableCell>}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -600,12 +688,26 @@ export default function Inventory() {
                         ? precioTexto
                         : 'Selecciona cliente'}
                     </TableCell>
+                    {canEditProductos && (
+                      <TableCell align="center">
+                        <IconButton
+                          size="small"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            handleOpenEditProducto(prod)
+                          }}
+                          aria-label="Editar producto"
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </TableCell>
+                    )}
                   </TableRow>
                 )
               })}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4}>
+                  <TableCell colSpan={canEditProductos ? 4 : 3}>
                     <Typography color="text.secondary">
                       No hay productos en esta categoría
                     </Typography>
@@ -653,6 +755,95 @@ export default function Inventory() {
           <Button onClick={handleCloseQtyDialog}>Cancelar</Button>
           <Button variant="contained" onClick={handleConfirmQty}>
             Añadir a la orden
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* -------- DIALOG: EDITAR PRODUCTO -------- */}
+      <Dialog
+        open={editDialog.open}
+        onClose={handleCloseEditProducto}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Editar producto</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <TextField
+              label="Nombre"
+              value={editDialog.nombre}
+              onChange={(e) =>
+                setEditDialog((prev) => ({ ...prev, nombre: e.target.value }))
+              }
+              required
+              fullWidth
+            />
+            <TextField
+              label="Código"
+              value={editDialog.codigo}
+              onChange={(e) =>
+                setEditDialog((prev) => ({ ...prev, codigo: e.target.value }))
+              }
+              required
+              fullWidth
+            />
+            <TextField
+              label="Precio CF"
+              type="number"
+              value={editDialog.precio_cf}
+              onChange={(e) =>
+                setEditDialog((prev) => ({ ...prev, precio_cf: e.target.value }))
+              }
+              inputProps={{ min: 0, step: '0.01' }}
+              fullWidth
+            />
+            <TextField
+              label="Precio Minorista"
+              type="number"
+              value={editDialog.precio_minorista}
+              onChange={(e) =>
+                setEditDialog((prev) => ({ ...prev, precio_minorista: e.target.value }))
+              }
+              inputProps={{ min: 0, step: '0.01' }}
+              fullWidth
+            />
+            <TextField
+              label="Precio Mayorista"
+              type="number"
+              value={editDialog.precio_mayorista}
+              onChange={(e) =>
+                setEditDialog((prev) => ({ ...prev, precio_mayorista: e.target.value }))
+              }
+              inputProps={{ min: 0, step: '0.01' }}
+              fullWidth
+            />
+            <TextField
+              select
+              label="Activo"
+              value={editDialog.activo ? 'si' : 'no'}
+              onChange={(e) =>
+                setEditDialog((prev) => ({ ...prev, activo: e.target.value === 'si' }))
+              }
+              fullWidth
+            >
+              <MenuItem value="si">Si</MenuItem>
+              <MenuItem value="no">No</MenuItem>
+            </TextField>
+            {editDialog.error && (
+              <Alert severity="error">{editDialog.error}</Alert>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseEditProducto} disabled={editDialog.loading}>
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSaveProducto}
+            disabled={editDialog.loading}
+          >
+            Guardar
           </Button>
         </DialogActions>
       </Dialog>
