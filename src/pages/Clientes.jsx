@@ -8,6 +8,7 @@ import PersonAddAltIcon from '@mui/icons-material/PersonAddAlt'
 import EditIcon from '@mui/icons-material/Edit'
 import dayjs from 'dayjs'
 import { API_BASE_URL } from '../config/api'
+import { useAuth } from '../context/AuthContext'
 
 // Calcula total de una orden a partir de sus items
 function calcTotal(items = []) {
@@ -85,6 +86,7 @@ const buildCodigoCliente = ({ nombre, departamento }) => {
 }
 
 export default function Clientes() {
+  const { hasAnyPermiso } = useAuth()
   const [query, setQuery] = React.useState('')
   const [ordenes, setOrdenes] = React.useState([])
   const [clientesRaw, setClientesRaw] = React.useState([])
@@ -720,14 +722,16 @@ export default function Clientes() {
             </Box>
             {clienteSel && (
               <Stack direction="row" spacing={1} alignItems="center">
-                <Button
-                  size="small"
-                  variant="outlined"
-                  startIcon={<EditIcon />}
-                  onClick={() => handleOpenEditCliente(clienteSel)}
-                >
-                  Editar cliente
-                </Button>
+                {hasAnyPermiso(['Maestro']) && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<EditIcon />}
+                    onClick={() => handleOpenEditCliente(clienteSel)}
+                  >
+                    Editar cliente
+                  </Button>
+                )}
                 <Button
                   size="small"
                   variant="contained"
