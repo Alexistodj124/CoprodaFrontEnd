@@ -31,6 +31,7 @@ const BANCOS_GUATEMALA = [
   'Bantrab',
   'Banco Azteca',
   'Banco Inmobiliario',
+  'Efectivo'
 ]
 
 export default function Bancos() {
