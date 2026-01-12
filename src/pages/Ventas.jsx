@@ -429,6 +429,7 @@ export default function Inventory() {
       cliente_id: clienteSeleccionado.id,
       items: itemsPayload,
       total: subtotal,
+      saldo: subtotal,
     }
 
     console.log('Payload para /ordenes:', body)
