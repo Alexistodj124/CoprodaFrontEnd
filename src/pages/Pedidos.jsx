@@ -310,6 +310,11 @@ export default function Reportes() {
     const clienteTel = clienteInfo?.telefono ?? ''
     const clienteDir = clienteInfo?.direccion ?? ''
     const clienteCodigo = clienteInfo?.codigo ?? ''
+    const usuarioNombre =
+      ordenSel?.usuario?.usuario ||
+      ordenSel?.usuario?.username ||
+      ordenSel?.usuario ||
+      ''
     const tipoPagoKey = ordenSel.tipo_pago_id != null ? String(ordenSel.tipo_pago_id) : ''
     let tipoPagoSeleccionado = null
     for (const tipo of tiposPago) {
@@ -373,7 +378,6 @@ export default function Reportes() {
         </div>
 
         <div class="datos">
-          <div><strong>NIT:</strong> __________</div>
           <div><strong>PAGO:</strong> ${pago}</div>
           <div><strong>VENCIMIENTO:</strong> ${vencimiento || '__________'}</div>
         </div>

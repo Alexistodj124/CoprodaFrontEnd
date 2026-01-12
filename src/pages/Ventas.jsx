@@ -8,6 +8,7 @@ import {
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { API_BASE_URL } from '../config/api'
+import { useAuth } from '../context/AuthContext'
 
 
 const CATEGORIES = [
@@ -46,6 +47,7 @@ const tipoPOS = [
 
 
 export default function Inventory() {
+  const { user } = useAuth()
   const DEFAULT_ESTADO_ID = 1
   const getPrecioForCliente = (product, clasificacion) => {
     if (!product) return 0
@@ -445,6 +447,7 @@ export default function Inventory() {
       tipo_pago_id: tipoPagoId,
       estado_id: DEFAULT_ESTADO_ID,
       cliente_id: clienteSeleccionado.id,
+      ...(user?.id ? { usuario_id: user.id } : {}),
       items: itemsPayload,
       total: subtotal,
       saldo: subtotal,
