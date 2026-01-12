@@ -305,11 +305,9 @@ export default function Clientes() {
 
   const saldoCliente = React.useMemo(() => {
     if (!clienteSel) return 0
-    const totalOrdenes = (clienteSel.ordenes || []).reduce(
-      (sum, orden) => sum + calcTotal(orden.items || []),
-      0
-    )
-    return Number.isFinite(totalOrdenes) ? totalOrdenes : 0
+    const raw = clienteSel.saldo ?? 0
+    const num = Number(raw)
+    return Number.isFinite(num) ? num : 0
   }, [clienteSel])
 
   const abonosCliente = React.useMemo(() => {
@@ -703,6 +701,7 @@ export default function Clientes() {
                 <TableCell>No. Orden</TableCell>
                 <TableCell align="right">Días crédito</TableCell>
                 <TableCell align="right">Total</TableCell>
+                <TableCell align="right">Restante</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -734,6 +733,7 @@ export default function Clientes() {
                     {diasRestantes} días
                   </TableCell>
                   <TableCell align="right">Q {calcTotal(o.items).toFixed(2)}</TableCell>
+                  <TableCell align="right">Q {Number(o.saldo ?? 0).toFixed(2)}</TableCell>
                 </TableRow>
                   )
                 })()
