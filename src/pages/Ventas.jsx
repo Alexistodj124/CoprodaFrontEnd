@@ -385,10 +385,11 @@ export default function Inventory() {
       ok = false
     }
     const tel = cliente.telefono.trim()
-    // Validación simple: 8–15 dígitos (permite + y espacios)
-    const telOk = /^(\+?\d[\d\s-]{7,14})$/.test(tel)
+    const digits = tel.replace(/\D/g, '')
+    // Validación simple: 8–20 dígitos (ignora separadores comunes)
+    const telOk = digits.length >= 8 && digits.length <= 20
     if (!telOk) {
-      e.telefono = 'Ingresa un número válido (8–15 dígitos)'
+      e.telefono = 'Ingresa un número válido (8–20 dígitos)'
       ok = false
     }
     setErrors(e)
@@ -396,12 +397,26 @@ export default function Inventory() {
   }
 
   const handleConfirmCheckout = async () => {
-    if (!validate()) return
+    console.log('[Ventas] Confirmar pedido: inicio', {
+      cartCount: cart.length,
+      clienteId: clienteSeleccionado?.id ?? null,
+      tipoPago: venta.tipoPago,
+      tipoPagoDetalle: venta.tipoPagoDetalle,
+    })
+    if (!validate()) {
+      console.warn('[Ventas] Confirmar pedido: validacion cliente fallida', {
+        nombre: !!cliente.nombre?.trim(),
+        telefono: !!cliente.telefono?.trim(),
+      })
+      return
+    }
     if (cart.length === 0) {
+      console.warn('[Ventas] Confirmar pedido: carrito vacio')
       setSnack({ open: true, msg: 'Tu carrito está vacío', severity: 'warning' })
       return
     }
     if (!clienteSeleccionado?.id) {
+      console.warn('[Ventas] Confirmar pedido: cliente sin seleccionar')
       setSnack({ open: true, msg: 'Selecciona un cliente existente', severity: 'warning' })
       return
     }
@@ -409,6 +424,9 @@ export default function Inventory() {
     // 1) Cliente: existente o nuevo
     const tipoPagoId = Number(venta.tipoPagoDetalle)
     if (!Number.isFinite(tipoPagoId)) {
+      console.warn('[Ventas] Confirmar pedido: tipo de pago invalido', {
+        tipoPagoDetalle: venta.tipoPagoDetalle,
+      })
       setSnack({ open: true, msg: 'Selecciona un tipo de pago válido', severity: 'warning' })
       return
     }
@@ -432,7 +450,10 @@ export default function Inventory() {
       saldo: subtotal,
     }
 
-    console.log('Payload para /ordenes:', body)
+    console.log('[Ventas] Payload para /ordenes:', {
+      ...body,
+      itemsCount: itemsPayload.length,
+    })
 
     try {
       const res = await fetch(`${API_BASE_URL}/ordenes`, {
@@ -443,7 +464,11 @@ export default function Inventory() {
 
       if (!res.ok) {
         const errorText = await res.text()
-        console.error('Error al crear orden:', errorText)
+        console.error('[Ventas] Error al crear orden:', {
+          status: res.status,
+          statusText: res.statusText,
+          errorText,
+        })
         setSnack({
           open: true,
           msg: 'Error al crear la orden ❌',
@@ -453,7 +478,7 @@ export default function Inventory() {
       }
 
       const data = await res.json()
-      console.log('Orden creada en backend:', data)
+      console.log('[Ventas] Orden creada en backend:', data)
 
       // Feedback y limpieza
       setSnack({
