@@ -16,18 +16,23 @@ export function RequireAuth({ children }) {
   return children
 }
 
-// Requiere ser admin
-export function RequireAdmin({ children }) {
-  const { user, isAdmin } = useAuth()
+// Requiere permisos específicos (o Maestro/admin)
+export function RequirePermiso({ children, permisos = [], permiso }) {
+  const { user, hasAnyPermiso, permisosReady } = useAuth()
   const location = useLocation()
 
   if (!user) {
     return <Navigate to="/signin" state={{ from: location }} replace />
   }
 
-  if (!isAdmin) {
-    // logueado pero NO admin -> lo mandamos al POS (ventas)
-    return <Navigate to="/ventas" replace />
+  if (!permisosReady) {
+    return null
+  }
+
+  const required = permisos.length ? permisos : permiso ? [permiso] : []
+  if (required.length > 0 && !hasAnyPermiso(required)) {
+    // logueado pero sin permiso -> lo mandamos al home
+    return <Navigate to="/" replace />
   }
 
   return children

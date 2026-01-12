@@ -13,7 +13,7 @@ import Pedidos from './pages/Pedidos.jsx'
 import Bodega from './pages/Bodega.jsx'
 import Bancos from './pages/Bancos.jsx'
 import Abonos from './pages/Abonos.jsx'
-import { RequireAuth, RequireAdmin } from './ProtectedRoutes.jsx'
+import { RequireAuth, RequirePermiso } from './ProtectedRoutes.jsx'
 
 const router = createBrowserRouter(
   [
@@ -32,65 +32,65 @@ const router = createBrowserRouter(
         {
           path: 'ventas',
           element: (
-            <RequireAuth>
+            <RequirePermiso permiso="Ventas">
               <Ventas />
-            </RequireAuth>
+            </RequirePermiso>
           ),
         },
         {
           path: 'compras',
           element: (
-            <RequireAdmin>
+            <RequirePermiso permisos={['Compras', 'Productos']}>
               <Compras />
-            </RequireAdmin>
+            </RequirePermiso>
           ),
         },
         {
           path: 'reportes',
           element: (
-            <RequireAdmin>
+            <RequirePermiso permiso="Reportes">
               <Reportes />
-            </RequireAdmin>
+            </RequirePermiso>
           ),
         },
         {
           path: 'clientes',
           element: (
-            <RequireAdmin>
+            <RequirePermiso permiso="Clientes">
               <Clientes />
-            </RequireAdmin>
+            </RequirePermiso>
           ),
         },
         {
           path: 'pedidos',
           element: (
-            <RequireAdmin>
+            <RequirePermiso permiso="Pedidos">
               <Pedidos />
-            </RequireAdmin>
+            </RequirePermiso>
           ),
         },
         {
           path: 'bodega',
           element: (
-            <RequireAdmin>
+            <RequirePermiso permiso="Bodega">
               <Bodega />
-            </RequireAdmin>
+            </RequirePermiso>
           ),
         },
         {
           path: 'bancos',
           element: (
-            <RequireAdmin>
+            <RequirePermiso permiso="Bancos">
               <Bancos />
-            </RequireAdmin>
+            </RequirePermiso>
           ),
         },
         {
           path: 'abonos',
           element: (
-            <RequireAdmin>
+            <RequirePermiso permiso="Abonos">
               <Abonos />
-            </RequireAdmin>
+            </RequirePermiso>
           ),
         },
         { path: '*', element: <NotFound /> },

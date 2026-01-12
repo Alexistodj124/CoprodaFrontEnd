@@ -9,13 +9,15 @@ import Typography from '@mui/material/Typography'
 import { useAuth } from '../context/AuthContext'
 
 export default function AppLayout() {
-  const { user, logout } = useAuth()
+  const { user, logout, hasAnyPermiso } = useAuth()
   const navigate = useNavigate()
 
   const handleLogout = () => {
     logout()                               // limpia contexto + localStorage
     navigate('/signin', { replace: true }) // manda al login
   }
+
+  const canAccess = (permiso) => hasAnyPermiso([permiso])
 
   return (
     <>
@@ -34,37 +36,53 @@ export default function AppLayout() {
               <Button color="inherit" component={RouterLink} to="/">
                 Inicio
               </Button>
-              <Button color="inherit" component={RouterLink} to="/compras">
-                Productos
-              </Button>
-              <Button color="inherit" component={RouterLink} to="/ventas">
-                Ventas
-              </Button>
-              <Button color="inherit" component={RouterLink} to="/pedidos">
-                Pedidos
-              </Button>
-              <Button color="inherit" component={RouterLink} to="/bodega">
-                Bodega
-              </Button>
-              <Button color="inherit" component={RouterLink} to="/clientes">
-                Clientes
-              </Button>
-              <Button color="inherit" component={RouterLink} to="/abonos">
-                Abonos
-              </Button>
-              <Button color="inherit" component={RouterLink} to="/bancos">
-                Bancos
-              </Button>
-              <Button color="inherit" component={RouterLink} to="/reportes">
-                Reportes
-              </Button>
+              {canAccess('Compras') || canAccess('Productos') ? (
+                <Button color="inherit" component={RouterLink} to="/compras">
+                  Productos
+                </Button>
+              ) : null}
+              {canAccess('Ventas') ? (
+                <Button color="inherit" component={RouterLink} to="/ventas">
+                  Ventas
+                </Button>
+              ) : null}
+              {canAccess('Pedidos') ? (
+                <Button color="inherit" component={RouterLink} to="/pedidos">
+                  Pedidos
+                </Button>
+              ) : null}
+              {canAccess('Bodega') ? (
+                <Button color="inherit" component={RouterLink} to="/bodega">
+                  Bodega
+                </Button>
+              ) : null}
+              {canAccess('Clientes') ? (
+                <Button color="inherit" component={RouterLink} to="/clientes">
+                  Clientes
+                </Button>
+              ) : null}
+              {canAccess('Abonos') ? (
+                <Button color="inherit" component={RouterLink} to="/abonos">
+                  Abonos
+                </Button>
+              ) : null}
+              {canAccess('Bancos') ? (
+                <Button color="inherit" component={RouterLink} to="/bancos">
+                  Bancos
+                </Button>
+              ) : null}
+              {canAccess('Reportes') ? (
+                <Button color="inherit" component={RouterLink} to="/reportes">
+                  Reportes
+                </Button>
+              ) : null}
 
               {/* Mostrar usuario + Logout */}
               <Typography
                 variant="body2"
                 sx={{ mx: 2, fontWeight: 500 }}
               >
-                {user.username}
+                {user?.username || user?.usuario || ''}
               </Typography>
 
               <Button
