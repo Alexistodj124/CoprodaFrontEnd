@@ -87,7 +87,9 @@ const buildCodigoCliente = ({ nombre, departamento }) => {
 
 export default function Clientes() {
   const { hasAnyPermiso } = useAuth()
+  const isMaestro = hasAnyPermiso(['Maestro'])
   const [query, setQuery] = React.useState('')
+  const [filtroActivo, setFiltroActivo] = React.useState('todos')
   const [ordenes, setOrdenes] = React.useState([])
   const [clientesRaw, setClientesRaw] = React.useState([])
   const [estadosOrden, setEstadosOrden] = React.useState([])
@@ -114,6 +116,7 @@ export default function Clientes() {
     direccion: '',
     clasificacion: 'cf',
     saldo: '',
+    activo: true,
     loading: false,
     error: '',
   })
@@ -283,6 +286,12 @@ export default function Clientes() {
       )
     }
 
+    if (isMaestro && filtroActivo !== 'todos') {
+      arr = arr.filter((c) => (
+        filtroActivo === 'activos' ? c.activo !== false : c.activo === false
+      ))
+    }
+
     // ordenar por última compra desc (clientes sin fecha se van al final)
     arr.sort((a, b) => {
       const aDate = a.ultima ? dayjs(a.ultima).valueOf() : -Infinity
@@ -290,7 +299,7 @@ export default function Clientes() {
       return bDate - aDate
     })
     return arr
-  }, [ordenesPendientesPago, query, clientesRaw])
+  }, [ordenesPendientesPago, query, clientesRaw, filtroActivo, isMaestro])
 
   const clientesById = React.useMemo(() => {
     const map = {}
@@ -473,6 +482,7 @@ export default function Clientes() {
       direccion: direccionDetalle,
       clasificacion: cliente?.clasificacion_precio || 'cf',
       saldo: cliente?.saldo != null ? String(cliente.saldo) : '',
+      activo: cliente?.activo ?? true,
       loading: false,
       error: '',
     })
@@ -537,6 +547,7 @@ export default function Clientes() {
         telefono,
         direccion,
         clasificacion_precio,
+        activo: !!clienteDialog.activo,
         ...(saldo !== null ? { saldo } : null),
       }
       const res = await fetch(url, {
@@ -599,6 +610,20 @@ export default function Clientes() {
             onChange={(e) => setQuery(e.target.value)}
             fullWidth
           />
+          {isMaestro && (
+            <TextField
+              select
+              label="Activo"
+              size="small"
+              value={filtroActivo}
+              onChange={(e) => setFiltroActivo(e.target.value)}
+              sx={{ minWidth: 160 }}
+            >
+              <MenuItem value="todos">Todos</MenuItem>
+              <MenuItem value="activos">Activos</MenuItem>
+              <MenuItem value="inactivos">Inactivos</MenuItem>
+            </TextField>
+          )}
           <Stack direction="row" spacing={1} alignItems="center">
             <Chip label={`Clientes: ${clientes.length}`} />
             {hasAnyPermiso(['ClientesFinanzas', 'Maestro']) && (
@@ -1059,6 +1084,17 @@ export default function Clientes() {
               onChange={(e) => setClienteDialog((prev) => ({ ...prev, saldo: e.target.value }))}
               inputProps={{ step: '0.01', min: '0' }}
             />
+            <TextField
+              select
+              label="Activo"
+              value={clienteDialog.activo ? 'si' : 'no'}
+              onChange={(e) =>
+                setClienteDialog((prev) => ({ ...prev, activo: e.target.value === 'si' }))
+              }
+            >
+              <MenuItem value="si">Si</MenuItem>
+              <MenuItem value="no">No</MenuItem>
+            </TextField>
             {clienteDialog.error && (
               <Typography variant="body2" color="error">
                 {clienteDialog.error}
