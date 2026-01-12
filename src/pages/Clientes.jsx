@@ -97,6 +97,8 @@ export default function Clientes() {
     open: false,
     cliente: null,
     selected: new Set(),
+    loading: false,
+    error: '',
   })
   const [clienteDialog, setClienteDialog] = React.useState({
     open: false,
@@ -110,119 +112,120 @@ export default function Clientes() {
   })
   
 
+  const cargarOrdenes = React.useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/ordenes`)
+      if (!res.ok) {
+        const txt = await res.text()
+        console.error('Error backend /ordenes:', txt)
+        return
+      }
+      const data = await res.json()
+      console.log('Ordenes cargadas:', data)
+      setOrdenes(data)
+    } catch (err) {
+      console.error('Error de red al cargar ordenes:', err)
+    }
+  }, [])
+
+  const cargarClientes = React.useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/clientes`)
+      if (!res.ok) {
+        const txt = await res.text()
+        console.error('Error backend /clientes:', txt)
+        return
+      }
+      const data = await res.json()
+      setClientesRaw(data || [])
+    } catch (err) {
+      console.error('Error de red al cargar clientes:', err)
+    }
+  }, [])
+
+  const cargarProductos = React.useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/productos`)
+      if (!res.ok) throw new Error('Error al obtener productos')
+      const data = await res.json()
+      const map = {}
+      for (const producto of data || []) {
+        if (producto?.id != null) {
+          map[producto.id] = producto
+        }
+      }
+      setProductosById(map)
+    } catch (err) {
+      console.error(err)
+    }
+  }, [])
+
+  const cargarTiposPago = React.useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/tipos_pago`)
+      if (!res.ok) {
+        const txt = await res.text()
+        console.error('Error backend /tipos_pago:', txt)
+        return
+      }
+      const data = await res.json()
+      setTiposPago(data || [])
+    } catch (err) {
+      console.error('Error de red al cargar tipos de pago:', err)
+    }
+  }, [])
+
+  const cargarBancos = React.useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/bancos`)
+      if (!res.ok) {
+        const txt = await res.text()
+        console.error('Error backend /bancos:', txt)
+        return
+      }
+      const data = await res.json()
+      setBancos(data || [])
+    } catch (err) {
+      console.error('Error de red al cargar bancos:', err)
+    }
+  }, [])
+
+  const cargarEstadosOrden = React.useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/estados_orden`)
+      if (!res.ok) {
+        const txt = await res.text()
+        console.error('Error backend /estados_orden:', txt)
+        return
+      }
+      const data = await res.json()
+      setEstadosOrden(data || [])
+    } catch (err) {
+      console.error('Error de red al cargar estados:', err)
+    }
+  }, [])
+
   // Cargar órdenes desde el backend
   React.useEffect(() => {
-    const cargarOrdenes = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/ordenes`)
-        if (!res.ok) {
-          const txt = await res.text()
-          console.error('Error backend /ordenes:', txt)
-          return
-        }
-        const data = await res.json()
-        console.log('Ordenes cargadas:', data)
-        setOrdenes(data)
-      } catch (err) {
-        console.error('Error de red al cargar ordenes:', err)
-      }
-    }
-
     cargarOrdenes()
-  }, [])
+  }, [cargarOrdenes])
 
   // Cargar clientes desde el backend
   React.useEffect(() => {
-    const cargarClientes = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/clientes`)
-        if (!res.ok) {
-          const txt = await res.text()
-          console.error('Error backend /clientes:', txt)
-          return
-        }
-        const data = await res.json()
-        setClientesRaw(data || [])
-      } catch (err) {
-        console.error('Error de red al cargar clientes:', err)
-      }
-    }
-    const cargarProductos = async () => {
-        try {
-          const res = await fetch(`${API_BASE_URL}/productos`)
-          if (!res.ok) throw new Error('Error al obtener productos')
-          const data = await res.json()
-          const map = {}
-          for (const producto of data || []) {
-            if (producto?.id != null) {
-              map[producto.id] = producto
-            }
-          }
-          setProductosById(map)
-        } catch (err) {
-          console.error(err)
-        }
-      }
-
     cargarClientes()
     cargarProductos()
-  }, [])
+  }, [cargarClientes, cargarProductos])
 
   // Cargar tipos de pago y bancos desde el backend
   React.useEffect(() => {
-    const cargarTiposPago = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/tipos_pago`)
-        if (!res.ok) {
-          const txt = await res.text()
-          console.error('Error backend /tipos_pago:', txt)
-          return
-        }
-        const data = await res.json()
-        setTiposPago(data || [])
-      } catch (err) {
-        console.error('Error de red al cargar tipos de pago:', err)
-      }
-    }
-
-    const cargarBancos = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/bancos`)
-        if (!res.ok) {
-          const txt = await res.text()
-          console.error('Error backend /bancos:', txt)
-          return
-        }
-        const data = await res.json()
-        setBancos(data || [])
-      } catch (err) {
-        console.error('Error de red al cargar bancos:', err)
-      }
-    }
-
     cargarTiposPago()
     cargarBancos()
-  }, [])
+  }, [cargarTiposPago, cargarBancos])
 
   // Cargar estados de orden desde el backend
   React.useEffect(() => {
-    const cargarEstadosOrden = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/estados_orden`)
-        if (!res.ok) {
-          const txt = await res.text()
-          console.error('Error backend /estados_orden:', txt)
-          return
-        }
-        const data = await res.json()
-        setEstadosOrden(data || [])
-      } catch (err) {
-        console.error('Error de red al cargar estados:', err)
-      }
-    }
-
     cargarEstadosOrden()
-  }, [])
+  }, [cargarEstadosOrden])
 
   const ordenesPendientesPago = React.useMemo(() => {
     const estadoPendiente = estadosOrden.find(
@@ -361,18 +364,66 @@ export default function Clientes() {
   }
 
   const handleOpenAbono = (cliente) => {
-    setAbonoDialog({ open: true, cliente, selected: new Set() })
+    setAbonoDialog({
+      open: true,
+      cliente,
+      selected: new Set(),
+      loading: false,
+      error: '',
+    })
   }
 
   const handleCerrarAbono = () => {
-    setAbonoDialog({ open: false, cliente: null, selected: new Set() })
+    setAbonoDialog({
+      open: false,
+      cliente: null,
+      selected: new Set(),
+      loading: false,
+      error: '',
+    })
   }
 
-  const handleConfirmarAbono = () => {
-    console.log('Asignar abonos', {
-      cliente: abonoDialog.cliente,
-      seleccion: Array.from(abonoDialog.selected),
-    })
+  const handleConfirmarAbono = async () => {
+    if (!abonoDialog.cliente) return
+    const clienteId = abonoDialog.cliente.id
+    const selectedIds = Array.from(abonoDialog.selected || [])
+
+    setAbonoDialog(prev => ({ ...prev, loading: true, error: '' }))
+
+    for (const bancoId of selectedIds) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/ordenes/abonos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cliente_id: clienteId,
+            banco_id: bancoId,
+          }),
+        })
+
+        if (!res.ok) {
+          const txt = await res.text()
+          let msg = 'No se pudo asignar el abono'
+          try {
+            const parsed = JSON.parse(txt)
+            msg = parsed.error || msg
+          } catch (_) {
+            // noop
+          }
+          throw new Error(msg)
+        }
+      } catch (err) {
+        console.error('Error asignando abono:', err)
+        setAbonoDialog(prev => ({
+          ...prev,
+          loading: false,
+          error: err?.message || 'Error de red al asignar el abono',
+        }))
+        return
+      }
+    }
+
+    await Promise.all([cargarOrdenes(), cargarClientes(), cargarBancos()])
     handleCerrarAbono()
   }
 
@@ -707,6 +758,11 @@ export default function Clientes() {
           Asignar abonos {abonoDialog.cliente ? `a ${abonoDialog.cliente.nombre}` : ''}
         </DialogTitle>
         <DialogContent dividers>
+          {abonoDialog.error && (
+            <Typography color="error" sx={{ mb: 2 }}>
+              {abonoDialog.error}
+            </Typography>
+          )}
           {pagosPendientesCliente.length === 0 && (
             <Typography color="text.secondary">
               No hay pagos pendientes de asignar para este cliente.
@@ -755,9 +811,9 @@ export default function Clientes() {
           <Button
             variant="contained"
             onClick={handleConfirmarAbono}
-            disabled={abonoDialog.selected.size === 0}
+            disabled={abonoDialog.selected.size === 0 || abonoDialog.loading}
           >
-            Confirmar abono
+            {abonoDialog.loading ? 'Asignando...' : 'Confirmar abono'}
           </Button>
         </DialogActions>
       </Dialog>
