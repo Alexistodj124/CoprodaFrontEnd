@@ -18,7 +18,7 @@ const modules = [
   { to: '/compras', permiso: 'Compras', altPermisos: ['Productos'], title: 'Compras', icon: ProductionQuantityLimitsIcon, subtitle: 'Compra y carga de productos' },
   { to: '/pedidos', permiso: 'Pedidos', title: 'Pedidos', icon: AssignmentIcon, subtitle: 'Órdenes generadas y detalle' },
   { to: '/bodega', permiso: 'Bodega', title: 'Bodega', icon: WarehouseIcon, subtitle: 'Inventario y stock' },
-  { to: '/clientes', permiso: 'Clientes', title: 'Clientes', icon: PortraitIcon, subtitle: 'Historial y abonos por cliente' },
+  { to: '/clientes', permiso: 'Clientes', altPermisos: ['ClientesVentas', 'ClientesFinanzas'], title: 'Clientes', icon: PortraitIcon, subtitle: 'Historial y abonos por cliente' },
   { to: '/abonos', permiso: 'Abonos', title: 'Abonos', icon: PaymentsIcon, subtitle: 'Abonos aplicados por cliente' },
   { to: '/bancos', permiso: 'Bancos', title: 'Bancos', icon: AccountBalanceIcon, subtitle: 'Pagos sin asignar' },
   { to: '/', title: 'Inicio', icon: InventoryIcon, subtitle: 'Volver al panel principal' },

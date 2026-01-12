@@ -56,7 +56,7 @@ export default function AppLayout() {
                   Bodega
                 </Button>
               ) : null}
-              {canAccess('Clientes') ? (
+              {canAccess('Clientes') || canAccess('ClientesVentas') || canAccess('ClientesFinanzas') ? (
                 <Button color="inherit" component={RouterLink} to="/clientes">
                   Clientes
                 </Button>

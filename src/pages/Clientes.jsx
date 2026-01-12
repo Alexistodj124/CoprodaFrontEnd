@@ -601,13 +601,15 @@ export default function Clientes() {
           />
           <Stack direction="row" spacing={1} alignItems="center">
             <Chip label={`Clientes: ${clientes.length}`} />
-            <Button
-              variant="contained"
-              startIcon={<PersonAddAltIcon />}
-              onClick={handleOpenClienteDialog}
-            >
-              Nuevo cliente
-            </Button>
+            {hasAnyPermiso(['ClientesFinanzas', 'Maestro']) && (
+              <Button
+                variant="contained"
+                startIcon={<PersonAddAltIcon />}
+                onClick={handleOpenClienteDialog}
+              >
+                Nuevo cliente
+              </Button>
+            )}
           </Stack>
         </Stack>
       </Paper>
@@ -732,15 +734,17 @@ export default function Clientes() {
                     Editar cliente
                   </Button>
                 )}
-                <Button
-                  size="small"
-                  variant="contained"
-                  startIcon={<AddCircleIcon />}
-                  onClick={() => handleOpenAbono(clienteSel)}
-                  sx={{ alignSelf: 'flex-start' }}
-                >
-                  Agregar abono
-                </Button>
+                {hasAnyPermiso(['Clientes', 'Maestro', 'ClientesFinanzas']) && (
+                  <Button
+                    size="small"
+                    variant="contained"
+                    startIcon={<AddCircleIcon />}
+                    onClick={() => handleOpenAbono(clienteSel)}
+                    sx={{ alignSelf: 'flex-start' }}
+                  >
+                    Agregar abono
+                  </Button>
+                )}
               </Stack>
             )}
           </Box>
