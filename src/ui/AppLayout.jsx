@@ -7,6 +7,7 @@ import Button from '@mui/material/Button'
 import Container from '@mui/material/Container'
 import Typography from '@mui/material/Typography'
 import { useAuth } from '../context/AuthContext'
+import logoCoproda from '../assets/image.png'
 
 export default function AppLayout() {
   const { user, logout, hasAnyPermiso } = useAuth()
@@ -23,11 +24,15 @@ export default function AppLayout() {
     <>
       <AppBar
         position="static"
-        sx={{ backgroundColor: '#e0dacb', color: 'black' }}
+        sx={{ backgroundColor: '#e60303ff', color: 'white' }}
       >
         <Toolbar>
           <Typography sx={{ flexGrow: 1 }} variant="h6">
-            COPRODA
+            <img
+              src={logoCoproda}
+              alt="Coproda"
+              style={{ height: 50, display: 'block' }}
+            />
           </Typography>
 
           {/* Navegación solo si está logueado */}
