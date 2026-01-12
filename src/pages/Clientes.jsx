@@ -5,6 +5,7 @@ import {
 } from '@mui/material'
 import AddCircleIcon from '@mui/icons-material/AddCircle'
 import PersonAddAltIcon from '@mui/icons-material/PersonAddAlt'
+import EditIcon from '@mui/icons-material/Edit'
 import dayjs from 'dayjs'
 import { API_BASE_URL } from '../config/api'
 
@@ -102,11 +103,15 @@ export default function Clientes() {
   })
   const [clienteDialog, setClienteDialog] = React.useState({
     open: false,
+    mode: 'create',
+    id: null,
+    codigo: '',
     nombre: '',
     telefono: '',
     departamento: '',
     direccion: '',
     clasificacion: 'cf',
+    saldo: '',
     loading: false,
     error: '',
   })
@@ -428,11 +433,44 @@ export default function Clientes() {
   const handleOpenClienteDialog = () => {
     setClienteDialog({
       open: true,
+      mode: 'create',
+      id: null,
+      codigo: '',
       nombre: '',
       telefono: '',
       departamento: '',
       direccion: '',
       clasificacion: 'cf',
+      saldo: '',
+      loading: false,
+      error: '',
+    })
+  }
+
+  const handleOpenEditCliente = (cliente) => {
+    const direccion = (cliente?.direccion || '').trim()
+    let departamento = ''
+    let direccionDetalle = direccion
+    if (direccion.includes(',')) {
+      const [posibleDepartamento, ...resto] = direccion.split(',')
+      const depto = posibleDepartamento.trim()
+      if (DEPARTAMENTOS_GUATEMALA.includes(depto)) {
+        departamento = depto
+        direccionDetalle = resto.join(',').trim()
+      }
+    }
+
+    setClienteDialog({
+      open: true,
+      mode: 'edit',
+      id: cliente?.id ?? null,
+      codigo: cliente?.codigo || '',
+      nombre: cliente?.nombre || '',
+      telefono: cliente?.telefono || '',
+      departamento,
+      direccion: direccionDetalle,
+      clasificacion: cliente?.clasificacion_precio || 'cf',
+      saldo: cliente?.saldo != null ? String(cliente.saldo) : '',
       loading: false,
       error: '',
     })
@@ -454,6 +492,8 @@ export default function Clientes() {
       ? [departamento, direccionInput].filter(Boolean).join(', ')
       : (direccionInput || null)
     const clasificacion_precio = clienteDialog.clasificacion
+    const saldoValue = clienteDialog.saldo.toString().trim()
+    const saldo = saldoValue === '' ? null : Number(saldoValue)
 
     if (!nombre) {
       setClienteDialog((prev) => ({
@@ -463,24 +503,49 @@ export default function Clientes() {
       }))
       return
     }
-    const codigo = buildCodigoCliente({ nombre, departamento })
+    const codigo = clienteDialog.mode === 'edit'
+      ? (clienteDialog.codigo || '').trim()
+      : buildCodigoCliente({ nombre, departamento })
+
+    if (clienteDialog.mode === 'edit' && !codigo) {
+      setClienteDialog((prev) => ({
+        ...prev,
+        loading: false,
+        error: 'Código es requerido',
+      }))
+      return
+    }
+    if (saldo !== null && !Number.isFinite(saldo)) {
+      setClienteDialog((prev) => ({
+        ...prev,
+        loading: false,
+        error: 'Saldo debe ser un número válido',
+      }))
+      return
+    }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/clientes`, {
-        method: 'POST',
+      const url = clienteDialog.mode === 'edit'
+        ? `${API_BASE_URL}/clientes/${clienteDialog.id}`
+        : `${API_BASE_URL}/clientes`
+      const method = clienteDialog.mode === 'edit' ? 'PUT' : 'POST'
+      const payload = {
+        ...(clienteDialog.mode === 'edit' ? { codigo } : { codigo }),
+        nombre,
+        telefono,
+        direccion,
+        clasificacion_precio,
+        ...(saldo !== null ? { saldo } : null),
+      }
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          codigo,
-          nombre,
-          telefono,
-          direccion,
-          clasificacion_precio,
-        }),
+        body: JSON.stringify(payload),
       })
 
       if (!res.ok) {
         const txt = await res.text()
-        let msg = 'No se pudo crear el cliente'
+        let msg = 'No se pudo guardar el cliente'
         try {
           const parsed = JSON.parse(txt)
           msg = parsed.error || msg
@@ -492,21 +557,26 @@ export default function Clientes() {
       }
 
       const data = await res.json()
-      const nuevoCliente = {
-        ...data,
-        ordenes: [],
-        total: 0,
-        ultima: data.creado_en || new Date().toISOString(),
+      if (clienteDialog.mode === 'edit') {
+        setClientesRaw((prev) => prev.map((cli) => (cli.id === data.id ? data : cli)))
+        setClienteSel((prev) => (prev?.id === data.id ? { ...prev, ...data } : prev))
+      } else {
+        const nuevoCliente = {
+          ...data,
+          ordenes: [],
+          total: 0,
+          ultima: data.creado_en || new Date().toISOString(),
+        }
+        setClientesRaw((prev) => [...prev, nuevoCliente])
+        setClienteSel(nuevoCliente)
       }
-      setClientesRaw((prev) => [...prev, nuevoCliente])
-      setClienteSel(nuevoCliente)
       handleCloseClienteDialog()
     } catch (err) {
       console.error('Error creando cliente:', err)
       setClienteDialog((prev) => ({
         ...prev,
         loading: false,
-        error: 'Error de red al crear el cliente',
+        error: 'Error de red al guardar el cliente',
       }))
     }
   }
@@ -649,15 +719,25 @@ export default function Clientes() {
               )}
             </Box>
             {clienteSel && (
-              <Button
-                size="small"
-                variant="contained"
-                startIcon={<AddCircleIcon />}
-                onClick={() => handleOpenAbono(clienteSel)}
-                sx={{ alignSelf: 'flex-start' }}
-              >
-                Agregar abono
-              </Button>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<EditIcon />}
+                  onClick={() => handleOpenEditCliente(clienteSel)}
+                >
+                  Editar cliente
+                </Button>
+                <Button
+                  size="small"
+                  variant="contained"
+                  startIcon={<AddCircleIcon />}
+                  onClick={() => handleOpenAbono(clienteSel)}
+                  sx={{ alignSelf: 'flex-start' }}
+                >
+                  Agregar abono
+                </Button>
+              </Stack>
             )}
           </Box>
 
@@ -904,11 +984,21 @@ export default function Clientes() {
         </DialogActions>
       </Dialog>
 
-      {/* -------- Dialog Nuevo Cliente -------- */}
+      {/* -------- Dialog Cliente -------- */}
       <Dialog open={clienteDialog.open} onClose={handleCloseClienteDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>Nuevo cliente</DialogTitle>
+        <DialogTitle>
+          {clienteDialog.mode === 'edit' ? 'Editar cliente' : 'Nuevo cliente'}
+        </DialogTitle>
         <form onSubmit={handleCrearCliente}>
           <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {clienteDialog.mode === 'edit' && (
+              <TextField
+                label="Código"
+                value={clienteDialog.codigo}
+                onChange={(e) => setClienteDialog((prev) => ({ ...prev, codigo: e.target.value }))}
+                required
+              />
+            )}
             <TextField
               label="Nombre"
               value={clienteDialog.nombre}
@@ -954,6 +1044,13 @@ export default function Clientes() {
               <MenuItem value="minorista">Minorista</MenuItem>
               <MenuItem value="mayorista">Mayorista</MenuItem>
             </TextField>
+            <TextField
+              label="Saldo"
+              type="number"
+              value={clienteDialog.saldo}
+              onChange={(e) => setClienteDialog((prev) => ({ ...prev, saldo: e.target.value }))}
+              inputProps={{ step: '0.01', min: '0' }}
+            />
             {clienteDialog.error && (
               <Typography variant="body2" color="error">
                 {clienteDialog.error}
@@ -967,7 +1064,7 @@ export default function Clientes() {
             <Button
               variant="contained"
               type="submit"
-              startIcon={<PersonAddAltIcon />}
+              startIcon={clienteDialog.mode === 'edit' ? <EditIcon /> : <PersonAddAltIcon />}
               disabled={clienteDialog.loading}
             >
               Guardar
