@@ -9,6 +9,7 @@ import InventoryIcon from '@mui/icons-material/Inventory2'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import WarehouseIcon from '@mui/icons-material/Warehouse'
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
+import PaymentsIcon from '@mui/icons-material/Payments'
 
 const modules = [
   { to: '/ventas', title: 'Ventas', icon: PointOfSaleIcon, subtitle: 'Módulo de ventas y pedidos rápidos' },
@@ -17,6 +18,7 @@ const modules = [
   { to: '/pedidos', title: 'Pedidos', icon: AssignmentIcon, subtitle: 'Órdenes generadas y detalle' },
   { to: '/bodega', title: 'Bodega', icon: WarehouseIcon, subtitle: 'Inventario y stock' },
   { to: '/clientes', title: 'Clientes', icon: PortraitIcon, subtitle: 'Historial y abonos por cliente' },
+  { to: '/abonos', title: 'Abonos', icon: PaymentsIcon, subtitle: 'Abonos aplicados por cliente' },
   { to: '/bancos', title: 'Bancos', icon: AccountBalanceIcon, subtitle: 'Pagos sin asignar' },
   { to: '/', title: 'Inicio', icon: InventoryIcon, subtitle: 'Volver al panel principal' },
 ]

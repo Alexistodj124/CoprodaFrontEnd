@@ -757,7 +757,7 @@ export default function Clientes() {
                   Q {saldoCliente.toFixed(2)}
                 </Typography>
               </Box>
-              <Box
+              {/* <Box
                 sx={{
                   flex: 1,
                   p: 1.5,
@@ -770,7 +770,7 @@ export default function Clientes() {
                 <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#2e7d32' }}>
                   Q {abonosCliente.toFixed(2)}
                 </Typography>
-              </Box>
+              </Box> */}
             </Stack>
           )}
 
