@@ -841,7 +841,7 @@ export default function Clientes() {
                   onClick={() => setOrdenSel(o)}
                 >
                   <TableCell>{dayjs(o.fecha).format('YYYY-MM-DD')}</TableCell>
-                  <TableCell>{o.codigo || o.id}</TableCell>
+                  <TableCell>{o.codigo_orden || o.codigo || o.id}</TableCell>
                   <TableCell align="right">
                     {diasRestantes} días
                   </TableCell>
@@ -933,7 +933,7 @@ export default function Clientes() {
 
       {/* -------- Dialog Detalle de Orden -------- */}
       <Dialog open={!!ordenSel} onClose={() => setOrdenSel(null)} maxWidth="sm" fullWidth>
-        <DialogTitle>Orden {ordenSel?.codigo || ordenSel?.id}</DialogTitle>
+        <DialogTitle>Orden {ordenSel?.codigo_orden || ordenSel?.id}</DialogTitle>
         <DialogContent dividers>
           {(() => {
             const clienteOrden = ordenSel?.cliente ?? clientesById[ordenSel?.cliente_id]
@@ -985,7 +985,8 @@ export default function Clientes() {
                       `Producto #${it.producto_id ?? it.id}`
                   }
 
-                const sku = it.producto?.codigo || it.codigo || ''
+                const sku = productoInfo?.codigo || it.codigo || ''
+                console.log(sku)
 
                 const precio = it.precio ?? it.price ?? it.precio_unitario ?? 0
                 const qty = it.cantidad ?? it.qty ?? 1

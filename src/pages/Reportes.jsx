@@ -658,7 +658,7 @@ export default function Reportes() {
                     onClick={() => setOrdenSel(o)}
                   >
                     <TableCell>{dayjs(o.fecha).format('YYYY-MM-DD')}</TableCell>
-                    <TableCell>{o.codigo ?? o.id}</TableCell>
+                    <TableCell>{o.codigo_orden ?? o.id}</TableCell>
                     <TableCell>{clienteInfo?.nombre || '-'}</TableCell>
                     <TableCell>{estadoNombre || '-'}</TableCell>
                     <TableCell>{tipoPagoNombre || '-'}</TableCell>
@@ -684,7 +684,7 @@ export default function Reportes() {
 
         {/* -------- Dialog Detalle de Orden -------- */}
         <Dialog open={!!ordenSel} onClose={() => setOrdenSel(null)} maxWidth="sm" fullWidth>
-          <DialogTitle>Orden {ordenSel?.id}</DialogTitle>
+          <DialogTitle>Orden {ordenSel?.codigo_orden}</DialogTitle>
           <DialogContent dividers>
             <Stack spacing={1} sx={{ mb: 2 }}>
               <Typography variant="body2" color="text.secondary">

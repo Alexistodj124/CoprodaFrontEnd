@@ -304,7 +304,7 @@ export default function Reportes() {
 
     const copyTypes = ['CLIENTE', 'VENTAS', 'BODEGA']
     const fechaTexto = fmtDate(ordenSel.fecha)
-    const codigo = ordenSel.codigo ?? ordenSel.id ?? ''
+    const codigo = ordenSel.codigo_orden ?? ordenSel.codigo ?? ordenSel.id ?? ''
     const clienteInfo = ordenSel.cliente ?? clientesById[ordenSel.cliente_id]
     const clienteNombre = clienteInfo?.nombre ?? ''
     const clienteTel = clienteInfo?.telefono ?? ''
@@ -569,7 +569,7 @@ export default function Reportes() {
                     onClick={() => setOrdenSel(o)}
                   >
                     <TableCell>{dayjs(o.fecha).format('YYYY-MM-DD')}</TableCell>
-                    <TableCell>{o.codigo ?? o.id}</TableCell>
+                    <TableCell>{o.codigo_orden || o.codigo || o.id}</TableCell>
                     <TableCell>{clienteInfo?.nombre || '-'}</TableCell>
                     <TableCell>{tipoPagoNombre || '-'}</TableCell>
                     <TableCell align="right">
@@ -594,7 +594,7 @@ export default function Reportes() {
 
         {/* -------- Dialog Detalle de Orden -------- */}
         <Dialog open={!!ordenSel} onClose={() => setOrdenSel(null)} maxWidth="sm" fullWidth>
-          <DialogTitle>Orden {ordenSel?.id}</DialogTitle>
+          <DialogTitle>Orden {ordenSel?.codigo_orden || ordenSel?.codigo || ordenSel?.id || '-'}</DialogTitle>
           <DialogContent dividers>
             <Stack spacing={1} sx={{ mb: 2 }}>
               <Typography variant="body2" color="text.secondary">
