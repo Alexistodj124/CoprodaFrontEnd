@@ -296,8 +296,8 @@ export default function Reportes() {
           <td class="center">${qty || ''}</td>
           <td class="center">${sku || ''}</td>
           <td>${nombre}</td>
-          <td class="center">${numberFmt(price)}</td>
-          <td class="center">${numberFmt(subtotal)}</td>
+          <td class="center col-precio">${numberFmt(price)}</td>
+          <td class="center col-subtotal">${numberFmt(subtotal)}</td>
         </tr>
       `
     }).join('')
@@ -338,7 +338,7 @@ export default function Reportes() {
     }
 
     const copiesHtml = copyTypes.map((tipo) => `
-      <div class="hoja">
+      <div class="hoja" data-copy="${tipo}">
         <div class="watermark">
           <img src="${logoCoproda}" alt="Coproda" />
         </div>
@@ -384,8 +384,8 @@ export default function Reportes() {
               <th width="10%">CANTIDAD</th>
               <th width="15%">COD.PROD.</th>
               <th>DESCRIPCION</th>
-              <th width="15%">P/UNITARIO</th>
-              <th width="15%">SUB-TOTAL</th>
+              <th width="15%" class="col-precio">P/UNITARIO</th>
+              <th width="15%" class="col-subtotal">SUB-TOTAL</th>
             </tr>
           </thead>
           <tbody>
@@ -464,6 +464,9 @@ export default function Reportes() {
             .totales { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
             .total-box { display: flex; align-items: center; gap: 10px; border: 1px solid #000; padding: 6px 10px; font-weight: 900; }
             .cantidad { font-size: 16px; }
+            .hoja[data-copy="BODEGA"] .col-precio,
+            .hoja[data-copy="BODEGA"] .col-subtotal { display: none !important; }
+            .hoja[data-copy="BODEGA"] .totales { display: none !important; }
             .firmas { display: flex; justify-content: space-between; margin-top: 20px; font-weight: 700; gap: 20px; }
             .firma { flex: 1; }
             .firma-linea { border-top: 1px solid #000; margin: 65px 0 6px; }
@@ -568,7 +571,7 @@ export default function Reportes() {
                     sx={{ cursor: 'pointer' }}
                     onClick={() => setOrdenSel(o)}
                   >
-                    <TableCell>{dayjs(o.fecha).format('YYYY-MM-DD')}</TableCell>
+                    <TableCell>{dayjs(o.actualizado_en).format('YYYY-MM-DD')}</TableCell>
                     <TableCell>{o.codigo_orden || o.codigo || o.id}</TableCell>
                     <TableCell>{clienteInfo?.nombre || '-'}</TableCell>
                     <TableCell>{tipoPagoNombre || '-'}</TableCell>
@@ -598,7 +601,7 @@ export default function Reportes() {
           <DialogContent dividers>
             <Stack spacing={1} sx={{ mb: 2 }}>
               <Typography variant="body2" color="text.secondary">
-                Fecha: {ordenSel ? dayjs(ordenSel.fecha).format('YYYY-MM-DD') : '--'}
+                Fecha: {ordenSel ? dayjs(ordenSel.actualizado_en).format('YYYY-MM-DD') : '--'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Cliente: {(ordenSel?.cliente ?? clientesById[ordenSel?.cliente_id])?.nombre || '-'} — {(ordenSel?.cliente ?? clientesById[ordenSel?.cliente_id])?.telefono || '-'}
