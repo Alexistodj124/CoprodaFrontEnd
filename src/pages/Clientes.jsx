@@ -96,6 +96,7 @@ export default function Clientes() {
   const [productosById, setProductosById] = React.useState({})
   const [tiposPago, setTiposPago] = React.useState([])
   const [bancos, setBancos] = React.useState([])
+  const [usuarios, setUsuarios] = React.useState([])
   const [clienteSel, setClienteSel] = React.useState(null)   // objeto cliente agregado
   const [ordenSel, setOrdenSel] = React.useState(null)       // objeto orden para el diálogo
   const [abonoDialog, setAbonoDialog] = React.useState({
@@ -114,6 +115,7 @@ export default function Clientes() {
     telefono: '',
     departamento: '',
     direccion: '',
+    usuario_id: '',
     clasificacion: 'cf',
     saldo: '',
     activo: true,
@@ -215,6 +217,21 @@ export default function Clientes() {
     }
   }, [])
 
+  const cargarUsuarios = React.useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/usuarios`)
+      if (!res.ok) {
+        const txt = await res.text()
+        console.error('Error backend /usuarios:', txt)
+        return
+      }
+      const data = await res.json()
+      setUsuarios(data || [])
+    } catch (err) {
+      console.error('Error de red al cargar usuarios:', err)
+    }
+  }, [])
+
   // Cargar órdenes desde el backend
   React.useEffect(() => {
     cargarOrdenes()
@@ -224,7 +241,8 @@ export default function Clientes() {
   React.useEffect(() => {
     cargarClientes()
     cargarProductos()
-  }, [cargarClientes, cargarProductos])
+    cargarUsuarios()
+  }, [cargarClientes, cargarProductos, cargarUsuarios])
 
   // Cargar tipos de pago y bancos desde el backend
   React.useEffect(() => {
@@ -451,6 +469,7 @@ export default function Clientes() {
       telefono: '',
       departamento: '',
       direccion: '',
+      usuario_id: '',
       clasificacion: 'cf',
       saldo: '',
       loading: false,
@@ -480,6 +499,7 @@ export default function Clientes() {
       telefono: cliente?.telefono || '',
       departamento,
       direccion: direccionDetalle,
+      usuario_id: cliente?.usuario_id ?? '',
       clasificacion: cliente?.clasificacion_precio || 'cf',
       saldo: cliente?.saldo != null ? String(cliente.saldo) : '',
       activo: cliente?.activo ?? true,
@@ -506,6 +526,11 @@ export default function Clientes() {
     const clasificacion_precio = clienteDialog.clasificacion
     const saldoValue = clienteDialog.saldo.toString().trim()
     const saldo = saldoValue === '' ? null : Number(saldoValue)
+    const usuarioIdRaw = clienteDialog.usuario_id
+    const usuarioId = usuarioIdRaw === '' ? null : Number(usuarioIdRaw)
+    const usuarioPayload = clienteDialog.mode === 'edit'
+      ? { usuario_id: Number.isFinite(usuarioId) ? usuarioId : null }
+      : null
 
     if (!nombre) {
       setClienteDialog((prev) => ({
@@ -549,6 +574,7 @@ export default function Clientes() {
         clasificacion_precio,
         activo: !!clienteDialog.activo,
         ...(saldo !== null ? { saldo } : null),
+        ...(usuarioPayload || null),
       }
       const res = await fetch(url, {
         method,
@@ -986,7 +1012,6 @@ export default function Clientes() {
                   }
 
                 const sku = productoInfo?.codigo || it.codigo || ''
-                console.log(sku)
 
                 const precio = it.precio ?? it.price ?? it.precio_unitario ?? 0
                 const qty = it.cantidad ?? it.qty ?? 1
@@ -1044,6 +1069,30 @@ export default function Clientes() {
               value={clienteDialog.telefono}
               onChange={(e) => setClienteDialog((prev) => ({ ...prev, telefono: e.target.value }))}
             />
+            {clienteDialog.mode === 'edit' && (
+              <TextField
+                select
+                label="Usuario asignado"
+                value={clienteDialog.usuario_id}
+                onChange={(e) =>
+                  setClienteDialog((prev) => ({ ...prev, usuario_id: e.target.value }))
+                }
+              >
+                <MenuItem value="">Sin asignar</MenuItem>
+                {usuarios.map((usuario) => {
+                  const label =
+                    usuario?.usuario ||
+                    usuario?.username ||
+                    usuario?.nombre ||
+                    `Usuario #${usuario?.id ?? ''}`.trim()
+                  return (
+                    <MenuItem key={usuario.id} value={usuario.id}>
+                      {label}
+                    </MenuItem>
+                  )
+                })}
+              </TextField>
+            )}
             <TextField
               select
               label="Departamento"
