@@ -116,8 +116,8 @@ export default function Bancos() {
   }
 
   const handleDeletePago = async (pago) => {
-    if (!pago?.id || pago?.asignado) return
-    const confirmed = window.confirm('¿Eliminar este pago no asignado?')
+    if (!pago?.id) return
+    const confirmed = window.confirm('¿Eliminar este pago?')
     if (!confirmed) return
     try {
       setDeletingId(pago.id)
@@ -274,17 +274,15 @@ export default function Bancos() {
                 </TableCell>
                 <TableCell align="right">Q {(Number(p.monto) || 0).toFixed(2)}</TableCell>
                 <TableCell align="center">
-                  {!p.asignado && (
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => handleDeletePago(p)}
-                      disabled={deletingId === p.id}
-                      aria-label="Eliminar pago"
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  )}
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => handleDeletePago(p)}
+                    disabled={deletingId === p.id}
+                    aria-label="Eliminar pago"
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             ))}
