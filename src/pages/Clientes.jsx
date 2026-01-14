@@ -528,9 +528,9 @@ export default function Clientes() {
     const saldo = saldoValue === '' ? null : Number(saldoValue)
     const usuarioIdRaw = clienteDialog.usuario_id
     const usuarioId = usuarioIdRaw === '' ? null : Number(usuarioIdRaw)
-    const usuarioPayload = clienteDialog.mode === 'edit'
-      ? { usuario_id: Number.isFinite(usuarioId) ? usuarioId : null }
-      : null
+    const usuarioPayload = Number.isFinite(usuarioId)
+      ? { usuario_id: usuarioId }
+      : (clienteDialog.mode === 'edit' ? { usuario_id: null } : null)
 
     if (!nombre) {
       setClienteDialog((prev) => ({
@@ -1069,30 +1069,28 @@ export default function Clientes() {
               value={clienteDialog.telefono}
               onChange={(e) => setClienteDialog((prev) => ({ ...prev, telefono: e.target.value }))}
             />
-            {clienteDialog.mode === 'edit' && (
-              <TextField
-                select
-                label="Usuario asignado"
-                value={clienteDialog.usuario_id}
-                onChange={(e) =>
-                  setClienteDialog((prev) => ({ ...prev, usuario_id: e.target.value }))
-                }
-              >
-                <MenuItem value="">Sin asignar</MenuItem>
-                {usuarios.map((usuario) => {
-                  const label =
-                    usuario?.usuario ||
-                    usuario?.username ||
-                    usuario?.nombre ||
-                    `Usuario #${usuario?.id ?? ''}`.trim()
-                  return (
-                    <MenuItem key={usuario.id} value={usuario.id}>
-                      {label}
-                    </MenuItem>
-                  )
-                })}
-              </TextField>
-            )}
+            <TextField
+              select
+              label="Usuario asignado"
+              value={clienteDialog.usuario_id}
+              onChange={(e) =>
+                setClienteDialog((prev) => ({ ...prev, usuario_id: e.target.value }))
+              }
+            >
+              <MenuItem value="">Sin asignar</MenuItem>
+              {usuarios.map((usuario) => {
+                const label =
+                  usuario?.usuario ||
+                  usuario?.username ||
+                  usuario?.nombre ||
+                  `Usuario #${usuario?.id ?? ''}`.trim()
+                return (
+                  <MenuItem key={usuario.id} value={usuario.id}>
+                    {label}
+                  </MenuItem>
+                )
+              })}
+            </TextField>
             <TextField
               select
               label="Departamento"
