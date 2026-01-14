@@ -404,7 +404,7 @@ export default function Reportes() {
         <div class="firmas">
           <div class="firma">
             <div class="firma-linea"></div>
-            <div>FIRMA DEPTO. VENTAS:</div>
+            <div>FIRMA DEPTO. BODEGA:</div>
           </div>
           <div class="firma">
             <div class="firma-linea"></div>
