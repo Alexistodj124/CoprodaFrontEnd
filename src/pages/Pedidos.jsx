@@ -379,7 +379,6 @@ export default function Reportes() {
 
         <div class="datos">
           <div><strong>PAGO:</strong> ${pago}</div>
-          <div><strong>VENCIMIENTO:</strong> ${vencimiento || '__________'}</div>
         </div>
 
         <table class="tabla">
