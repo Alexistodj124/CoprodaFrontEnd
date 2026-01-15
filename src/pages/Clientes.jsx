@@ -683,8 +683,9 @@ export default function Clientes() {
                 const tieneVencidas = (c.ordenes || []).some((orden) => {
                   const diasCredito = getDiasCreditoForOrden(orden)
                   if (!diasCredito || diasCredito <= 0) return false
-                  const diasTranscurridos = orden?.fecha
-                    ? dayjs().diff(dayjs(orden.fecha), 'day')
+                  const fechaEnvio = orden?.fecha_envio || orden?.fecha
+                  const diasTranscurridos = fechaEnvio
+                    ? dayjs().diff(dayjs(fechaEnvio), 'day')
                     : 0
                   const diasRestantes = diasCredito - diasTranscurridos
                   return diasRestantes <= 0
@@ -846,7 +847,7 @@ export default function Clientes() {
             <TableBody>
               {ordenesCliente.map(o => (
                 (() => {
-                  const fechaOrden = o.fecha
+                  const fechaOrden = o.fecha_envio || o.fecha
                   const diasTranscurridos = fechaOrden
                     ? dayjs().diff(dayjs(fechaOrden), 'day')
                     : 0
