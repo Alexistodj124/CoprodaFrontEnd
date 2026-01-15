@@ -303,7 +303,7 @@ export default function Reportes() {
     }).join('')
 
     const copyTypes = ['CLIENTE', 'VENTAS', 'BODEGA']
-    const fechaTexto = fmtDate(ordenSel.fecha)
+    const fechaTexto = fmtDate(ordenSel.fecha_envio)
     const codigo = ordenSel.codigo_orden ?? ordenSel.codigo ?? ordenSel.id ?? ''
     const clienteInfo = ordenSel.cliente ?? clientesById[ordenSel.cliente_id]
     const clienteNombre = clienteInfo?.nombre ?? ''
@@ -333,7 +333,7 @@ export default function Reportes() {
       const firstToken = pagoNombreLower.trim().split(/\s+/)[0]
       const diasCredito = Number(firstToken)
       if (Number.isFinite(diasCredito) && diasCredito > 0) {
-        vencimiento = addDaysToDate(ordenSel.fecha, diasCredito)
+        vencimiento = addDaysToDate(ordenSel.fecha_envio, diasCredito)
       }
     }
 
