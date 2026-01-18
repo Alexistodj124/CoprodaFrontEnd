@@ -408,7 +408,7 @@ export default function Reportes() {
           </div>
           <div class="firma">
             <div class="firma-linea"></div>
-            <div>FIRMA ACEPTACION CLIENTE:</div>
+            <div>${tipo === 'BODEGA' ? 'FIRMA DE TRANSPORTE' : 'FIRMA ACEPTACION CLIENTE'}:</div>
           </div>
         </div>
       </div>

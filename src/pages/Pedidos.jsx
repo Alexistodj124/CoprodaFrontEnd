@@ -411,7 +411,7 @@ export default function Reportes() {
           </div>
           <div class="firma">
             <div class="firma-linea"></div>
-            <div>FIRMA ACEPTACION CLIENTE:</div>
+            <div>FIRMA ACEPTACION CONTABILIDAD:</div>
           </div>
         </div>
       </div>
