@@ -10,6 +10,7 @@ import Compras from './pages/Compras.jsx'
 import Reportes from './pages/Reportes.jsx'
 import Clientes from './pages/Clientes.jsx'
 import Pedidos from './pages/Pedidos.jsx'
+import Ordenes from './pages/Ordenes.jsx'
 import Bodega from './pages/Bodega.jsx'
 import Bancos from './pages/Bancos.jsx'
 import Abonos from './pages/Abonos.jsx'
@@ -66,6 +67,14 @@ const router = createBrowserRouter(
           element: (
             <RequirePermiso permiso="Pedidos">
               <Pedidos />
+            </RequirePermiso>
+          ),
+        },
+        {
+          path: 'ordenes',
+          element: (
+            <RequirePermiso permiso="Bodega">
+              <Ordenes />
             </RequirePermiso>
           ),
         },
