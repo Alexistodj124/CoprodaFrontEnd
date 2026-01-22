@@ -245,15 +245,28 @@ export default function Pedidos2() {
                     </TableRow>
                   )
                 }
+
                 return items.map((item, idx) => {
                   const productoInfo = item?.producto ?? productosById[item?.producto_id]
                   const sku = productoInfo?.codigo || item?.codigo || item?.sku || '-'
                   const cantidad = item?.cantidad ?? item?.qty ?? 0
+                  const isFirst = idx === 0
+
                   return (
                     <TableRow key={`${o.id}-${item?.id ?? sku}-${idx}`} hover>
-                      <TableCell>{dayjs(o.fecha).format('YYYY-MM-DD')}</TableCell>
-                      <TableCell>{o.codigo_orden || o.codigo || o.id}</TableCell>
-                      <TableCell>{clienteInfo?.nombre || '-'}</TableCell>
+                      {isFirst && (
+                        <>
+                          <TableCell rowSpan={items.length} sx={{ verticalAlign: 'middle' }}>
+                            {dayjs(o.fecha).format('YYYY-MM-DD')}
+                          </TableCell>
+                          <TableCell rowSpan={items.length} sx={{ verticalAlign: 'middle' }}>
+                            {o.codigo_orden || o.codigo || o.id}
+                          </TableCell>
+                          <TableCell rowSpan={items.length} sx={{ verticalAlign: 'middle' }}>
+                            {clienteInfo?.nombre || '-'}
+                          </TableCell>
+                        </>
+                      )}
                       <TableCell>{sku}</TableCell>
                       <TableCell align="right">{cantidad}</TableCell>
                     </TableRow>
