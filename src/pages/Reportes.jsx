@@ -48,6 +48,12 @@ const normalizeNumber = (value) => {
   return Number.isFinite(num) ? num : 0
 }
 
+const getOrdenMonto = (orden) => {
+  const estadoId = orden?.estado_id != null ? String(orden.estado_id) : ''
+  const raw = estadoId === '4' ? orden?.total : orden?.saldo
+  return normalizeNumber(raw)
+}
+
 const getOrdenDescuento = (orden) => normalizeNumber(orden?.descuento ?? orden?.discount ?? 0)
 const calcSubtotal = (items = []) =>
   items.reduce((s, it) => s + getItemPrice(it) * getItemQty(it), 0)
@@ -261,10 +267,7 @@ export default function Reportes() {
   }
 
 
-  const totalPeriodo = filtered.reduce(
-    (acc, o) => acc + calcTotal(o.items || [], getOrdenDescuento(o)),
-    0
-  )
+  const totalPeriodo = filtered.reduce((acc, o) => acc + getOrdenMonto(o), 0)
 
   const gananciaPeriodo = filtered.reduce(
     (acc, o) => acc + calcGanancia(o.items || [], getOrdenDescuento(o)),
@@ -280,7 +283,7 @@ export default function Reportes() {
 
   const descuentoOrdenSel = getOrdenDescuento(ordenSel)
   const subtotalOrdenSel = calcSubtotal(ordenSel?.items || [])
-  const totalOrdenSel = calcTotal(ordenSel?.items || [], descuentoOrdenSel)
+  const totalOrdenSel = getOrdenMonto(ordenSel)
   const ordenEstaConfirmada = ordenSel ? !!confirmadas[ordenSel.id] : false
 
   const handleConfirmOrden = async () => {
@@ -662,9 +665,7 @@ export default function Reportes() {
                     <TableCell>{clienteInfo?.nombre || '-'}</TableCell>
                     <TableCell>{estadoNombre || '-'}</TableCell>
                     <TableCell>{tipoPagoNombre || '-'}</TableCell>
-                    <TableCell align="right">
-                      Q {calcTotal(o.items || [], getOrdenDescuento(o)).toFixed(2)}
-                    </TableCell>
+                    <TableCell align="right">Q {getOrdenMonto(o).toFixed(2)}</TableCell>
                   </TableRow>
                 )
               })}
