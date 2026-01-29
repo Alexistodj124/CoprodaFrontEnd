@@ -2,7 +2,7 @@ import * as React from 'react'
 import {
   Box, Paper, Typography, Stack, Divider, TextField, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Dialog, DialogTitle, DialogContent, DialogActions, Button, Chip, MenuItem, InputAdornment, IconButton,
-  Autocomplete
+  Autocomplete, Checkbox, ListItemText
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { DateRangePicker } from '@mui/x-date-pickers-pro/DateRangePicker'
@@ -89,9 +89,11 @@ export default function Reportes() {
   const [ordenes, setOrdenes] = React.useState([])
   const [productosById, setProductosById] = React.useState({})
   const [clientesById, setClientesById] = React.useState({})
+  const [usuarios, setUsuarios] = React.useState([])
   const [tiposPago, setTiposPago] = React.useState([])
   const [estadosOrden, setEstadosOrden] = React.useState([])
-  const [estadoFiltro, setEstadoFiltro] = React.useState('todos')
+  const [estadoFiltro, setEstadoFiltro] = React.useState([])
+  const [usuarioFiltro, setUsuarioFiltro] = React.useState('todos')
   const [clienteFiltro, setClienteFiltro] = React.useState('todos')
   const [clienteFiltroInput, setClienteFiltroInput] = React.useState('')
     const [range, setRange] = React.useState([
@@ -103,9 +105,10 @@ export default function Reportes() {
 
   const filtered = React.useMemo(() => {
     let result = ordenes
-    if (estadoFiltro && estadoFiltro !== 'todos') {
-      result = result.filter(
-        (orden) => String(orden?.estado_id) === String(estadoFiltro)
+    if (estadoFiltro.length > 0) {
+      const estadosSet = new Set(estadoFiltro.map((id) => String(id)))
+      result = result.filter((orden) =>
+        estadosSet.has(String(orden?.estado_id))
       )
     }
     if (clienteFiltro && clienteFiltro !== 'todos') {
@@ -113,8 +116,15 @@ export default function Reportes() {
         (orden) => String(orden?.cliente_id) === String(clienteFiltro)
       )
     }
+    if (usuarioFiltro && usuarioFiltro !== 'todos') {
+      result = result.filter((orden) => {
+        const clienteInfo = orden?.cliente ?? clientesById[orden?.cliente_id]
+        if (!clienteInfo) return false
+        return String(clienteInfo?.usuario_id) === String(usuarioFiltro)
+      })
+    }
     return result
-  }, [ordenes, estadoFiltro, clienteFiltro])
+  }, [ordenes, estadoFiltro, clienteFiltro, usuarioFiltro, clientesById])
 
   const clientesOpciones = React.useMemo(
     () => Object.values(clientesById),
@@ -184,6 +194,17 @@ export default function Reportes() {
         }
       }
       setClientesById(map)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const cargarUsuarios = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/usuarios`)
+      if (!res.ok) throw new Error('Error al obtener usuarios')
+      const data = await res.json()
+      setUsuarios(data || [])
     } catch (err) {
       console.error(err)
     }
@@ -529,6 +550,7 @@ export default function Reportes() {
   React.useEffect(() => {
     cargarProductos()
     cargarClientes()
+    cargarUsuarios()
     cargarTiposPago()
     cargarEstadosOrden()
   }, [])
@@ -565,16 +587,55 @@ export default function Reportes() {
               select
               label="Estado"
               value={estadoFiltro}
-              onChange={(e) => setEstadoFiltro(e.target.value)}
+              onChange={(e) =>
+                setEstadoFiltro(
+                  Array.isArray(e.target.value) ? e.target.value : []
+                )
+              }
               size="small"
               sx={{ minWidth: 180 }}
+              SelectProps={{
+                multiple: true,
+                renderValue: (selected) => {
+                  if (!selected || selected.length === 0) return 'Todos'
+                  const selectedSet = new Set(selected.map((id) => String(id)))
+                  const labels = estadosOrden
+                    .filter((estado) => selectedSet.has(String(estado?.id)))
+                    .map((estado) => estado?.nombre || '')
+                    .filter(Boolean)
+                  return labels.length > 0 ? labels.join(', ') : 'Todos'
+                },
+              }}
             >
-              <MenuItem value="todos">Todos</MenuItem>
               {estadosOrden.map((estado) => (
                 <MenuItem key={estado.id} value={estado.id}>
-                  {estado.nombre}
+                  <Checkbox checked={estadoFiltro.includes(estado.id)} />
+                  <ListItemText primary={estado.nombre} />
                 </MenuItem>
               ))}
+            </TextField>
+
+            <TextField
+              select
+              label="Usuario"
+              value={usuarioFiltro}
+              onChange={(e) => setUsuarioFiltro(e.target.value)}
+              size="small"
+              sx={{ minWidth: 200 }}
+            >
+              <MenuItem value="todos">Todos</MenuItem>
+              {usuarios.map((usuario) => {
+                const label =
+                  usuario?.usuario ||
+                  usuario?.username ||
+                  usuario?.nombre ||
+                  `Usuario #${usuario?.id ?? ''}`.trim()
+                return (
+                  <MenuItem key={usuario.id} value={usuario.id}>
+                    {label}
+                  </MenuItem>
+                )
+              })}
             </TextField>
 
             <Autocomplete
