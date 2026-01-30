@@ -48,7 +48,7 @@ const tipoPOS = [
 
 
 export default function Inventory() {
-  const { user, hasAnyPermiso } = useAuth()
+  const { user, hasAnyPermiso, isAdmin } = useAuth()
   const DEFAULT_ESTADO_ID = 1
   const getPrecioForCliente = (product, clasificacion) => {
     if (!product) return 0
@@ -127,6 +127,24 @@ export default function Inventory() {
       return nombre.includes(query) || codigo.includes(query) || id.includes(query)
     })
   }
+
+  const canSeeAllClientes = isAdmin || hasAnyPermiso(['maestro'])
+  const clientesDisponibles = React.useMemo(() => {
+    if (canSeeAllClientes) return clientes
+    if (!user?.id) return []
+    return clientes.filter(
+      (clienteItem) => String(clienteItem?.usuario_id) === String(user.id)
+    )
+  }, [clientes, canSeeAllClientes, user?.id])
+
+  React.useEffect(() => {
+    if (canSeeAllClientes) return
+    if (!clienteSeleccionado || !user?.id) return
+    if (String(clienteSeleccionado?.usuario_id) === String(user.id)) return
+    setClienteSeleccionado(null)
+    setEsClienteExistente(false)
+    setCliente(prev => ({ ...prev, telefono: '', email: '', nit: '' }))
+  }, [canSeeAllClientes, clienteSeleccionado, user?.id])
 
 
   const getTipoPagoLabel = (detalle) => detalle?.nombre ?? detalle?.label ?? ''
@@ -869,7 +887,7 @@ export default function Inventory() {
           fullWidth
           size="small"
           freeSolo
-          options={clientes}
+          options={clientesDisponibles}
           filterOptions={filterClientes}
           getOptionLabel={(option) =>
             typeof option === 'string' ? option : option.nombre
@@ -952,7 +970,7 @@ export default function Inventory() {
             <Autocomplete
               fullWidth
               freeSolo                          // permite escribir valores no existentes
-              options={clientes}                // [{ id, nombre, telefono }, ...]
+              options={clientesDisponibles}     // [{ id, nombre, telefono }, ...]
               filterOptions={filterClientes}
               getOptionLabel={(option) =>
                 typeof option === 'string' ? option : option.nombre
