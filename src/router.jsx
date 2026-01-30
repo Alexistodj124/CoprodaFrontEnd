@@ -73,7 +73,7 @@ const router = createBrowserRouter(
         {
           path: 'ordenes',
           element: (
-            <RequirePermiso permiso="Produccion">
+            <RequirePermiso permisos={["Produccion", "Ventas"]}>
               <Ordenes />
             </RequirePermiso>
           ),

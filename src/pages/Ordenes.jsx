@@ -8,6 +8,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import dayjs from 'dayjs'
 import { API_BASE_URL } from '../config/api'
+import { useAuth } from '../context/AuthContext'
 
 // --- Datos de ejemplo (luego los reemplazas por tu API/DB) ---
 
@@ -65,6 +66,7 @@ function calcGanancia(items = [], descuento = 0) {
 }
 
 export default function Pedidos2() {
+  const { user, isAdmin, hasAnyPermiso } = useAuth()
   const [ordenes, setOrdenes] = React.useState([])
   const [productosById, setProductosById] = React.useState({})
   const [clientesById, setClientesById] = React.useState({})
@@ -75,14 +77,25 @@ export default function Pedidos2() {
   ])
 
   const filtered = React.useMemo(() => {
+    const canSeeAll = isAdmin || hasAnyPermiso(['maestro'])
     const estadoPedido = estadosOrden.find(
       (estado) => String(estado?.nombre || '').toLowerCase() === 'confirmado'
     )
-    if (!estadoPedido?.id) return ordenes
-    return ordenes.filter(
-      (orden) => String(orden?.estado_id) === String(estadoPedido.id)
-    )
-  }, [ordenes, estadosOrden])
+    let result = ordenes
+    if (estadoPedido?.id) {
+      result = result.filter(
+        (orden) => String(orden?.estado_id) === String(estadoPedido.id)
+      )
+    }
+    if (!canSeeAll && user?.id != null) {
+      result = result.filter((orden) => {
+        const clienteInfo = orden?.cliente ?? clientesById[orden?.cliente_id]
+        if (!clienteInfo) return false
+        return String(clienteInfo?.usuario_id) === String(user.id)
+      })
+    }
+    return result
+  }, [ordenes, estadosOrden, clientesById, user?.id, isAdmin, hasAnyPermiso])
 
 
   // 🔹 GET /ordenes?inicio=...&fin=...
