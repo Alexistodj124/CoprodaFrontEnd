@@ -77,7 +77,7 @@ export default function Pedidos2() {
   ])
 
   const filtered = React.useMemo(() => {
-    const canSeeAll = isAdmin || hasAnyPermiso(['maestro'])
+    const canSeeAll = isAdmin || hasAnyPermiso(['maestro']|| hasAnyPermiso('produccion'))
     const estadoPedido = estadosOrden.find(
       (estado) => String(estado?.nombre || '').toLowerCase() === 'confirmado'
     )
