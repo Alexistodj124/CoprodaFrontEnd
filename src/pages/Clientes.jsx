@@ -86,8 +86,9 @@ const buildCodigoCliente = ({ nombre, departamento }) => {
 }
 
 export default function Clientes() {
-  const { hasAnyPermiso } = useAuth()
+  const { user, hasAnyPermiso } = useAuth()
   const isMaestro = hasAnyPermiso(['Maestro'])
+  const shouldFilterPorUsuario = hasAnyPermiso(['ClientesVentas'])
   const [query, setQuery] = React.useState('')
   const [filtroActivo, setFiltroActivo] = React.useState('todos')
   const [ordenes, setOrdenes] = React.useState([])
@@ -310,6 +311,10 @@ export default function Clientes() {
       ))
     }
 
+    if (shouldFilterPorUsuario && user?.id != null) {
+      arr = arr.filter((c) => String(c?.usuario_id) === String(user.id))
+    }
+
     // ordenar por última compra desc (clientes sin fecha se van al final)
     arr.sort((a, b) => {
       const aDate = a.ultima ? dayjs(a.ultima).valueOf() : -Infinity
@@ -317,7 +322,14 @@ export default function Clientes() {
       return bDate - aDate
     })
     return arr
-  }, [ordenesPendientesPago, query, clientesRaw, filtroActivo, isMaestro])
+  }, [ordenesPendientesPago, query, clientesRaw, filtroActivo, isMaestro, shouldFilterPorUsuario, user?.id])
+
+  React.useEffect(() => {
+    if (!shouldFilterPorUsuario || user?.id == null) return
+    if (!clienteSel) return
+    if (String(clienteSel?.usuario_id) === String(user.id)) return
+    setClienteSel(null)
+  }, [shouldFilterPorUsuario, user?.id, clienteSel])
 
   const clientesById = React.useMemo(() => {
     const map = {}
