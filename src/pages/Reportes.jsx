@@ -810,7 +810,7 @@ export default function Reportes() {
 
                 <TableRow>
                   <TableCell colSpan={4} align="right" sx={{ fontWeight: 600 }}>
-                    Subtotal
+                    Total
                   </TableCell>
                   <TableCell align="right" sx={{ fontWeight: 600 }}>
                     Q {subtotalOrdenSel.toFixed(2)}
@@ -828,7 +828,7 @@ export default function Reportes() {
                 )}
                 <TableRow>
                   <TableCell colSpan={4} align="right" sx={{ fontWeight: 700 }}>
-                    Total
+                    Total Restante
                   </TableCell>
                   <TableCell align="right" sx={{ fontWeight: 700 }}>
                     Q {totalOrdenSel.toFixed(2)}
