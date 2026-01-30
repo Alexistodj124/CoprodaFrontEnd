@@ -68,6 +68,15 @@ const formatTotalEnLetras = (value) => {
     .replace('/100 M.N.', '/100')
 }
 
+const formatCurrency = (value) => {
+  const num = Number(value)
+  if (!Number.isFinite(num)) return '0.00'
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num)
+}
+
 // Util: calcular total (restando el descuento de la orden si existe)
 function calcTotal(items = [], descuento = 0) {
   const subtotal = calcSubtotal(items)
@@ -674,7 +683,7 @@ export default function Reportes() {
             />
 
             <Chip
-              label={`Total en el período: Q ${totalPeriodo.toFixed(2)}`}
+              label={`Total en el período: Q ${formatCurrency(totalPeriodo)}`}
               color="primary"
               sx={{ fontWeight: 600 }}
             />
