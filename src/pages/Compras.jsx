@@ -4,10 +4,14 @@ import {
   Paper, InputAdornment, Snackbar, Alert, Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions, IconButton
+  DialogActions, IconButton, Divider, Checkbox, FormControlLabel,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow
 } from '@mui/material'
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate'
 import AddIcon from '@mui/icons-material/Add'
+import DeleteIcon from '@mui/icons-material/Delete'
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 
 import { API_BASE_URL } from '../config/api'
 
@@ -20,6 +24,9 @@ export default function NuevaCompra() {
     precioMinorista: 0,
     precioMayorista: 0,
     foto: '',
+    activo: true,
+    esProductoFinal: true,
+    stock: 0,
   })
 
 
@@ -30,6 +37,18 @@ export default function NuevaCompra() {
   const [nuevaCatNombre, setNuevaCatNombre] = React.useState('')
   const [nuevaCatDescripcion, setNuevaCatDescripcion] = React.useState('')
   const [categoriasProductos, setCategoriasProductos] = React.useState([])
+  const [procesosDisponibles, setProcesosDisponibles] = React.useState([])
+  const [materiasPrimasDisponibles, setMateriasPrimasDisponibles] = React.useState([])
+  const [productosDisponibles, setProductosDisponibles] = React.useState([])
+
+  const [procesoSeleccionado, setProcesoSeleccionado] = React.useState('')
+  const [procesosRuta, setProcesosRuta] = React.useState([])
+  const [bomItems, setBomItems] = React.useState([])
+  const [componentesItems, setComponentesItems] = React.useState([])
+
+  const [openNuevoProceso, setOpenNuevoProceso] = React.useState(false)
+  const [nuevoProcesoNombre, setNuevoProcesoNombre] = React.useState('')
+  const [nuevoProcesoDescripcion, setNuevoProcesoDescripcion] = React.useState('')
 
   const [loading, setLoading] = React.useState(false)
   const [mensajeExito, setMensajeExito] = React.useState('')
@@ -50,6 +69,39 @@ export default function NuevaCompra() {
       const data = await res.json()
       // data viene como array de objetos { id, nombre, descripcion, creada_en, actualizada_en }
       setCategoriasProductos(data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const cargarProcesos = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/procesos`)
+      if (!res.ok) throw new Error('Error al obtener procesos')
+      const data = await res.json()
+      setProcesosDisponibles(data || [])
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const cargarMateriasPrimas = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/materias_primas`)
+      if (!res.ok) throw new Error('Error al obtener materias primas')
+      const data = await res.json()
+      setMateriasPrimasDisponibles(data || [])
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const cargarProductosDisponibles = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/productos`)
+      if (!res.ok) throw new Error('Error al obtener productos')
+      const data = await res.json()
+      setProductosDisponibles(data || [])
     } catch (err) {
       console.error(err)
     }
@@ -109,8 +161,57 @@ export default function NuevaCompra() {
     }
   }
 
+  const handleOpenNuevoProceso = () => {
+    setNuevoProcesoNombre('')
+    setNuevoProcesoDescripcion('')
+    setOpenNuevoProceso(true)
+  }
+
+  const handleCloseNuevoProceso = () => {
+    setOpenNuevoProceso(false)
+  }
+
+  const handleGuardarNuevoProceso = async () => {
+    const nombre = nuevoProcesoNombre.trim()
+    const descripcion = nuevoProcesoDescripcion.trim() || null
+    if (!nombre) return
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/procesos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, descripcion }),
+      })
+
+      if (!res.ok) {
+        const errText = await res.text()
+        let msg = 'Error creando proceso'
+        try {
+          const parsed = JSON.parse(errText)
+          msg = parsed.error || msg
+        } catch (_) {
+          // noop
+        }
+        setSnack({ open: true, msg, severity: 'error' })
+        return
+      }
+
+      const created = await res.json()
+      await cargarProcesos()
+      if (created?.id) {
+        setProcesoSeleccionado(created.id)
+      }
+      setOpenNuevoProceso(false)
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
   React.useEffect(() => {
     cargarCategoriasProductos()
+    cargarProcesos()
+    cargarMateriasPrimas()
+    cargarProductosDisponibles()
   }, [])
 
   const handleImageChange = (e) => {
@@ -152,6 +253,9 @@ export default function NuevaCompra() {
         precio_minorista: Number(producto.precioMinorista) || 0,
         precio_mayorista: Number(producto.precioMayorista) || 0,
         foto: producto.foto || null,
+        activo: Boolean(producto.activo),
+        es_producto_final: Boolean(producto.esProductoFinal),
+        stock: Number(producto.stock) || 0,
       }
 
 
@@ -176,6 +280,50 @@ export default function NuevaCompra() {
 
       const data = await res.json()
       console.log('Producto creado:', data)
+      const productoId = data?.id
+
+      if (productoId != null) {
+        for (let i = 0; i < procesosRuta.length; i += 1) {
+          const proceso = procesosRuta[i]
+          if (!proceso?.proceso_id) continue
+          await fetch(`${API_BASE_URL}/productos/${productoId}/ruta-procesos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              proceso_id: Number(proceso.proceso_id),
+              orden: Number(proceso.orden ?? i + 1),
+            }),
+          })
+        }
+
+        for (const item of bomItems) {
+          if (!item?.materia_prima_id) continue
+          await fetch(`${API_BASE_URL}/productos/${productoId}/bom`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              materia_prima_id: Number(item.materia_prima_id),
+              cantidad_necesaria: Number(item.cantidad_necesaria) || 0,
+              merma_estandar: Number(item.merma_estandar) || 0,
+              notas: item.notas || null,
+            }),
+          })
+        }
+
+        for (const item of componentesItems) {
+          if (!item?.componente_id) continue
+          await fetch(`${API_BASE_URL}/productos/${productoId}/componentes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              componente_id: Number(item.componente_id),
+              cantidad_necesaria: Number(item.cantidad_necesaria) || 0,
+              merma_estandar: Number(item.merma_estandar) || 0,
+              notas: item.notas || null,
+            }),
+          })
+        }
+      }
 
       // 🔹 limpiar formulario
       const initialProducto = {
@@ -186,8 +334,15 @@ export default function NuevaCompra() {
         precioMinorista: 0,
         precioMayorista: 0,
         foto: '',
+        activo: true,
+        esProductoFinal: true,
+        stock: 0,
       }
       setProducto(initialProducto)
+      setProcesosRuta([])
+      setBomItems([])
+      setComponentesItems([])
+      setProcesoSeleccionado('')
 
       setPreview('')
       if (fileInputRef.current) {
@@ -352,6 +507,454 @@ export default function NuevaCompra() {
               }
             />
 
+            <Divider />
+
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+              Datos básicos
+            </Typography>
+
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={producto.activo}
+                    onChange={(e) =>
+                      setProducto((p) => ({ ...p, activo: e.target.checked }))
+                    }
+                  />
+                }
+                label="Activo"
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={producto.esProductoFinal}
+                    onChange={(e) =>
+                      setProducto((p) => ({
+                        ...p,
+                        esProductoFinal: e.target.checked,
+                      }))
+                    }
+                  />
+                }
+                label="Es producto final"
+              />
+            </Stack>
+
+            <TextField
+              label="Stock (si aplica)"
+              type="number"
+              value={producto.stock}
+              onChange={(e) =>
+                setProducto((p) => ({ ...p, stock: e.target.value }))
+              }
+            />
+
+            <Divider />
+
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+              Ruta de procesos
+            </Typography>
+
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+              <TextField
+                select
+                label="Seleccionar proceso"
+                fullWidth
+                value={procesoSeleccionado}
+                onChange={(e) => setProcesoSeleccionado(e.target.value)}
+              >
+                {procesosDisponibles.map((proc) => (
+                  <MenuItem key={proc.id} value={proc.id}>
+                    {proc.nombre}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  if (!procesoSeleccionado) return
+                  setProcesosRuta((prev) => [
+                    ...prev,
+                    {
+                      proceso_id: procesoSeleccionado,
+                      orden: prev.length + 1,
+                    },
+                  ])
+                  setProcesoSeleccionado('')
+                }}
+              >
+                Agregar proceso
+              </Button>
+              <Button variant="text" onClick={handleOpenNuevoProceso}>
+                Crear proceso nuevo
+              </Button>
+            </Stack>
+
+            <TableContainer component={Paper} variant="outlined">
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Orden</TableCell>
+                    <TableCell>Proceso</TableCell>
+                    <TableCell align="right">Acciones</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {procesosRuta.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3}>
+                        <Typography variant="body2" color="text.secondary">
+                          Aún no hay procesos agregados.
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    procesosRuta.map((item, index) => {
+                      const procesoInfo = procesosDisponibles.find(
+                        (p) => String(p.id) === String(item.proceso_id)
+                      )
+                      return (
+                        <TableRow key={`${item.proceso_id}-${index}`}>
+                          <TableCell>
+                            <TextField
+                              type="number"
+                              size="small"
+                              value={item.orden ?? index + 1}
+                              onChange={(e) => {
+                                const value = Number(e.target.value)
+                                setProcesosRuta((prev) =>
+                                  prev.map((p, i) =>
+                                    i === index ? { ...p, orden: value } : p
+                                  )
+                                )
+                              }}
+                              inputProps={{ min: 1, style: { width: 70 } }}
+                            />
+                          </TableCell>
+                          <TableCell>{procesoInfo?.nombre || 'Proceso'}</TableCell>
+                          <TableCell align="right">
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                if (index === 0) return
+                                setProcesosRuta((prev) => {
+                                  const next = [...prev]
+                                  const temp = next[index - 1]
+                                  next[index - 1] = next[index]
+                                  next[index] = temp
+                                  return next
+                                })
+                              }}
+                            >
+                              <ArrowUpwardIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                if (index === procesosRuta.length - 1) return
+                                setProcesosRuta((prev) => {
+                                  const next = [...prev]
+                                  const temp = next[index + 1]
+                                  next[index + 1] = next[index]
+                                  next[index] = temp
+                                  return next
+                                })
+                              }}
+                            >
+                              <ArrowDownwardIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                setProcesosRuta((prev) =>
+                                  prev.filter((_, i) => i !== index)
+                                )
+                              }
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            <Divider />
+
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+              BOM de materias primas
+            </Typography>
+
+            <TableContainer component={Paper} variant="outlined">
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Materia prima</TableCell>
+                    <TableCell>Cantidad</TableCell>
+                    <TableCell>Merma</TableCell>
+                    <TableCell>Notas</TableCell>
+                    <TableCell align="right">Acciones</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {bomItems.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5}>
+                        <Typography variant="body2" color="text.secondary">
+                          Aún no hay materias primas agregadas.
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    bomItems.map((item, index) => (
+                      <TableRow key={`bom-${index}`}>
+                        <TableCell>
+                          <TextField
+                            select
+                            size="small"
+                            fullWidth
+                            value={item.materia_prima_id}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              setBomItems((prev) =>
+                                prev.map((p, i) =>
+                                  i === index ? { ...p, materia_prima_id: value } : p
+                                )
+                              )
+                            }}
+                          >
+                            {materiasPrimasDisponibles.map((mp) => (
+                              <MenuItem key={mp.id} value={mp.id}>
+                                {mp.nombre}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </TableCell>
+                        <TableCell>
+                          <TextField
+                            size="small"
+                            type="number"
+                            value={item.cantidad_necesaria}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              setBomItems((prev) =>
+                                prev.map((p, i) =>
+                                  i === index
+                                    ? { ...p, cantidad_necesaria: value }
+                                    : p
+                                )
+                              )
+                            }}
+                            inputProps={{ min: 0, style: { width: 90 } }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <TextField
+                            size="small"
+                            type="number"
+                            value={item.merma_estandar}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              setBomItems((prev) =>
+                                prev.map((p, i) =>
+                                  i === index ? { ...p, merma_estandar: value } : p
+                                )
+                              )
+                            }}
+                            inputProps={{ min: 0, style: { width: 90 } }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <TextField
+                            size="small"
+                            fullWidth
+                            value={item.notas}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              setBomItems((prev) =>
+                                prev.map((p, i) =>
+                                  i === index ? { ...p, notas: value } : p
+                                )
+                              )
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              setBomItems((prev) =>
+                                prev.filter((_, i) => i !== index)
+                              )
+                            }
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            <Button
+              variant="outlined"
+              onClick={() =>
+                setBomItems((prev) => [
+                  ...prev,
+                  {
+                    materia_prima_id: '',
+                    cantidad_necesaria: 1,
+                    merma_estandar: 0,
+                    notas: '',
+                  },
+                ])
+              }
+            >
+              Agregar MP
+            </Button>
+
+            <Divider />
+
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+              Componentes (sub-ensambles)
+            </Typography>
+
+            <TableContainer component={Paper} variant="outlined">
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Producto componente</TableCell>
+                    <TableCell>Cantidad</TableCell>
+                    <TableCell>Merma</TableCell>
+                    <TableCell>Notas</TableCell>
+                    <TableCell align="right">Acciones</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {componentesItems.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5}>
+                        <Typography variant="body2" color="text.secondary">
+                          Aún no hay componentes agregados.
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    componentesItems.map((item, index) => (
+                      <TableRow key={`comp-${index}`}>
+                        <TableCell>
+                          <TextField
+                            select
+                            size="small"
+                            fullWidth
+                            value={item.componente_id}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              setComponentesItems((prev) =>
+                                prev.map((p, i) =>
+                                  i === index ? { ...p, componente_id: value } : p
+                                )
+                              )
+                            }}
+                          >
+                            {productosDisponibles.map((prod) => (
+                              <MenuItem key={prod.id} value={prod.id}>
+                                {prod.nombre}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </TableCell>
+                        <TableCell>
+                          <TextField
+                            size="small"
+                            type="number"
+                            value={item.cantidad_necesaria}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              setComponentesItems((prev) =>
+                                prev.map((p, i) =>
+                                  i === index
+                                    ? { ...p, cantidad_necesaria: value }
+                                    : p
+                                )
+                              )
+                            }}
+                            inputProps={{ min: 0, style: { width: 90 } }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <TextField
+                            size="small"
+                            type="number"
+                            value={item.merma_estandar}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              setComponentesItems((prev) =>
+                                prev.map((p, i) =>
+                                  i === index ? { ...p, merma_estandar: value } : p
+                                )
+                              )
+                            }}
+                            inputProps={{ min: 0, style: { width: 90 } }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <TextField
+                            size="small"
+                            fullWidth
+                            value={item.notas}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              setComponentesItems((prev) =>
+                                prev.map((p, i) =>
+                                  i === index ? { ...p, notas: value } : p
+                                )
+                              )
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              setComponentesItems((prev) =>
+                                prev.filter((_, i) => i !== index)
+                              )
+                            }
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            <Button
+              variant="outlined"
+              onClick={() =>
+                setComponentesItems((prev) => [
+                  ...prev,
+                  {
+                    componente_id: '',
+                    cantidad_necesaria: 1,
+                    merma_estandar: 0,
+                    notas: '',
+                  },
+                ])
+              }
+            >
+              Agregar componente
+            </Button>
+
             <Button variant="contained" color="primary" type="submit" disabled={loading}>
               Guardar
             </Button>
@@ -380,6 +983,32 @@ export default function NuevaCompra() {
           <DialogActions>
             <Button onClick={handleCloseNuevaCat}>Cancelar</Button>
             <Button variant="contained" onClick={handleGuardarNuevaCat}>
+              Guardar
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog open={openNuevoProceso} onClose={handleCloseNuevoProceso} fullWidth maxWidth="sm">
+          <DialogTitle>Nuevo proceso</DialogTitle>
+          <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <TextField
+              label="Nombre del proceso"
+              value={nuevoProcesoNombre}
+              onChange={(e) => setNuevoProcesoNombre(e.target.value)}
+              autoFocus
+              required
+            />
+            <TextField
+              label="Descripción (opcional)"
+              value={nuevoProcesoDescripcion}
+              onChange={(e) => setNuevoProcesoDescripcion(e.target.value)}
+              multiline
+              minRows={2}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseNuevoProceso}>Cancelar</Button>
+            <Button variant="contained" onClick={handleGuardarNuevoProceso}>
               Guardar
             </Button>
           </DialogActions>
