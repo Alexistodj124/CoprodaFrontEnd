@@ -12,10 +12,13 @@ import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
+import { useLocation } from 'react-router-dom'
 
 import { API_BASE_URL } from '../config/api'
 
 export default function NuevaCompra() {
+  const location = useLocation()
+  const [productoId, setProductoId] = React.useState(null)
   const [producto, setProducto] = React.useState({
     nombre: '',
     codigo: '',
@@ -49,6 +52,7 @@ export default function NuevaCompra() {
   const [openNuevoProceso, setOpenNuevoProceso] = React.useState(false)
   const [nuevoProcesoNombre, setNuevoProcesoNombre] = React.useState('')
   const [nuevoProcesoDescripcion, setNuevoProcesoDescripcion] = React.useState('')
+  const isEditMode = productoId != null
 
   const procesosRutaOpciones = React.useMemo(() => {
     return procesosRuta
@@ -121,6 +125,87 @@ export default function NuevaCompra() {
     } catch (err) {
       console.error(err)
     }
+  }
+
+  const cargarProductoDetalle = async (id) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/productos/${id}`)
+      if (!res.ok) throw new Error('Error al obtener producto')
+      const data = await res.json()
+      return data
+    } catch (err) {
+      console.error(err)
+      return null
+    }
+  }
+
+  const cargarRutaProcesosProducto = async (id) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/productos/${id}/ruta-procesos`)
+      if (!res.ok) throw new Error('Error al obtener ruta de procesos')
+      const data = await res.json()
+      setProcesosRuta(
+        (data || []).map((item) => ({
+          proceso_id: item.proceso_id ?? item.procesoId ?? item.proceso?.id ?? '',
+          orden: item.orden ?? item.order ?? '',
+        }))
+      )
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const cargarBomProducto = async (id) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/productos/${id}/bom`)
+      if (!res.ok) throw new Error('Error al obtener BOM')
+      const data = await res.json()
+      setBomItems(
+        (data || []).map((item) => ({
+          materia_prima_id: item.materia_prima_id ?? item.materiaPrimaId ?? item.materia_prima?.id ?? '',
+          cantidad_necesaria: item.cantidad_necesaria ?? item.cantidad ?? 0,
+          proceso_id: item.proceso_id ?? item.procesoId ?? '',
+          notas: item.notas ?? '',
+        }))
+      )
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const cargarComponentesProducto = async (id) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/productos/${id}/componentes`)
+      if (!res.ok) throw new Error('Error al obtener componentes')
+      const data = await res.json()
+      setComponentesItems(
+        (data || []).map((item) => ({
+          componente_id: item.componente_id ?? item.componenteId ?? item.componente?.id ?? '',
+          cantidad_necesaria: item.cantidad_necesaria ?? item.cantidad ?? 0,
+          proceso_id: item.proceso_id ?? item.procesoId ?? '',
+          notas: item.notas ?? '',
+        }))
+      )
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const aplicarProductoEnFormulario = (data) => {
+    if (!data) return
+    setProducto((prev) => ({
+      ...prev,
+      nombre: data.nombre ?? data.descripcion ?? '',
+      codigo: data.codigo ?? '',
+      categoriaId: data.categoria_id ?? data.categoriaId ?? '',
+      precioCF: data.precio_cf ?? data.precioCF ?? 0,
+      precioMinorista: data.precio_minorista ?? data.precioMinorista ?? 0,
+      precioMayorista: data.precio_mayorista ?? data.precioMayorista ?? 0,
+      foto: data.foto ?? '',
+      activo: data.activo ?? true,
+      esProductoFinal: data.es_producto_final ?? data.esProductoFinal ?? true,
+      stock: data.stock ?? 0,
+    }))
   }
 
   const handleOpenNuevaCat = () => {
@@ -230,6 +315,23 @@ export default function NuevaCompra() {
     cargarProductosDisponibles()
   }, [])
 
+  React.useEffect(() => {
+    const editId = location.state?.editProductoId ?? location.state?.producto?.id ?? null
+    if (!editId) return
+
+    setProductoId(editId)
+    aplicarProductoEnFormulario(location.state?.producto || null)
+
+    const cargarTodo = async () => {
+      const detalle = await cargarProductoDetalle(editId)
+      if (detalle) aplicarProductoEnFormulario(detalle)
+    }
+    cargarTodo()
+    cargarRutaProcesosProducto(editId)
+    cargarBomProducto(editId)
+    cargarComponentesProducto(editId)
+  }, [location.state])
+
   const handleImageChange = (e) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -275,15 +377,17 @@ export default function NuevaCompra() {
       }
 
 
-      const res = await fetch(`${API_BASE_URL}/productos`, {
-        method: 'POST',
+      const res = await fetch(
+        `${API_BASE_URL}/productos${isEditMode ? `/${productoId}` : ''}`,
+        {
+        method: isEditMode ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
 
       if (!res.ok) {
         const errText = await res.text()
-        let msg = 'Error al crear producto'
+        let msg = isEditMode ? 'Error al actualizar producto' : 'Error al crear producto'
         try {
           const parsed = JSON.parse(errText)
           msg = parsed.error || msg
@@ -295,14 +399,14 @@ export default function NuevaCompra() {
       }
 
       const data = await res.json()
-      console.log('Producto creado:', data)
-      const productoId = data?.id
+      console.log(isEditMode ? 'Producto actualizado:' : 'Producto creado:', data)
+      const savedProductoId = data?.id ?? productoId
 
-      if (productoId != null) {
+      if (savedProductoId != null) {
         for (let i = 0; i < procesosRuta.length; i += 1) {
           const proceso = procesosRuta[i]
           if (!proceso?.proceso_id) continue
-          await fetch(`${API_BASE_URL}/productos/${productoId}/ruta-procesos`, {
+          await fetch(`${API_BASE_URL}/productos/${savedProductoId}/ruta-procesos`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -314,7 +418,7 @@ export default function NuevaCompra() {
 
         for (const item of bomItems) {
           if (!item?.materia_prima_id) continue
-          await fetch(`${API_BASE_URL}/productos/${productoId}/bom`, {
+          await fetch(`${API_BASE_URL}/productos/${savedProductoId}/bom`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -328,7 +432,7 @@ export default function NuevaCompra() {
 
         for (const item of componentesItems) {
           if (!item?.componente_id) continue
-          await fetch(`${API_BASE_URL}/productos/${productoId}/componentes`, {
+          await fetch(`${API_BASE_URL}/productos/${savedProductoId}/componentes`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -342,23 +446,25 @@ export default function NuevaCompra() {
       }
 
       // 🔹 limpiar formulario
-      const initialProducto = {
-        nombre: '',
-        codigo: '',
-        categoriaId: '',
-        precioCF: 0,
-        precioMinorista: 0,
-        precioMayorista: 0,
-        foto: '',
-        activo: true,
-        esProductoFinal: true,
-        stock: 0,
+      if (!isEditMode) {
+        const initialProducto = {
+          nombre: '',
+          codigo: '',
+          categoriaId: '',
+          precioCF: 0,
+          precioMinorista: 0,
+          precioMayorista: 0,
+          foto: '',
+          activo: true,
+          esProductoFinal: true,
+          stock: 0,
+        }
+        setProducto(initialProducto)
+        setProcesosRuta([])
+        setBomItems([])
+        setComponentesItems([])
+        setProcesoSeleccionado('')
       }
-      setProducto(initialProducto)
-      setProcesosRuta([])
-      setBomItems([])
-      setComponentesItems([])
-      setProcesoSeleccionado('')
 
       setPreview('')
       if (fileInputRef.current) {
@@ -367,7 +473,7 @@ export default function NuevaCompra() {
 
       // 🔹 cerrar dialog
       // 🔹 mostrar mensaje de éxito (puede ser snackbar o algo simple)
-      setMensajeExito('Producto creado exitosamente')
+      setMensajeExito(isEditMode ? 'Producto actualizado exitosamente' : 'Producto creado exitosamente')
       setOpenSnackbarExito(true)
 
     } catch (err) {
@@ -383,7 +489,7 @@ export default function NuevaCompra() {
     <Box sx={{ maxWidth: 1100, mx: 'auto', mt: 3, px: 2 }}>
       <Paper sx={{ p: 3, borderRadius: 3 }}>
         <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
-          Agregar nuevo producto
+          {isEditMode ? 'Editar producto' : 'Agregar nuevo producto'}
         </Typography>
 
         <form onSubmit={handleSubmit}>
