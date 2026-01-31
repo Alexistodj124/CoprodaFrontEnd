@@ -380,7 +380,7 @@ export default function NuevaCompra() {
 
 
   return (
-    <Box sx={{ maxWidth: 700, mx: 'auto', mt: 3 }}>
+    <Box sx={{ maxWidth: 1100, mx: 'auto', mt: 3, px: 2 }}>
       <Paper sx={{ p: 3, borderRadius: 3 }}>
         <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
           Agregar nuevo producto
@@ -702,18 +702,18 @@ export default function NuevaCompra() {
             <Divider />
 
             <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              BOM de materias primas
+              Materias primas
             </Typography>
 
             <TableContainer component={Paper} variant="outlined">
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell>Materia prima</TableCell>
-                    <TableCell>Cantidad</TableCell>
-                    <TableCell>Proceso</TableCell>
+                    <TableCell sx={{ width: '30%' }}>Materia prima</TableCell>
+                    <TableCell sx={{ width: 140 }}>Cantidad</TableCell>
+                    <TableCell sx={{ width: '30%' }}>Proceso</TableCell>
                     <TableCell>Notas</TableCell>
-                    <TableCell align="right">Acciones</TableCell>
+                    <TableCell align="right" sx={{ width: 90 }}>Acciones</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -852,11 +852,11 @@ export default function NuevaCompra() {
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell>Producto componente</TableCell>
-                    <TableCell>Cantidad</TableCell>
-                    <TableCell>Proceso</TableCell>
+                    <TableCell sx={{ width: '30%' }}>Producto componente</TableCell>
+                    <TableCell sx={{ width: 140 }}>Cantidad</TableCell>
+                    <TableCell sx={{ width: '30%' }}>Proceso</TableCell>
                     <TableCell>Notas</TableCell>
-                    <TableCell align="right">Acciones</TableCell>
+                    <TableCell align="right" sx={{ width: 90 }}>Acciones</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
