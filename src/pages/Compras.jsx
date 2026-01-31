@@ -304,7 +304,6 @@ export default function NuevaCompra() {
             body: JSON.stringify({
               materia_prima_id: Number(item.materia_prima_id),
               cantidad_necesaria: Number(item.cantidad_necesaria) || 0,
-              merma_estandar: Number(item.merma_estandar) || 0,
               notas: item.notas || null,
             }),
           })
@@ -318,7 +317,6 @@ export default function NuevaCompra() {
             body: JSON.stringify({
               componente_id: Number(item.componente_id),
               cantidad_necesaria: Number(item.cantidad_necesaria) || 0,
-              merma_estandar: Number(item.merma_estandar) || 0,
               notas: item.notas || null,
             }),
           })
@@ -695,7 +693,6 @@ export default function NuevaCompra() {
                   <TableRow>
                     <TableCell>Materia prima</TableCell>
                     <TableCell>Cantidad</TableCell>
-                    <TableCell>Merma</TableCell>
                     <TableCell>Notas</TableCell>
                     <TableCell align="right">Acciones</TableCell>
                   </TableRow>
@@ -703,7 +700,7 @@ export default function NuevaCompra() {
                 <TableBody>
                   {bomItems.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5}>
+                      <TableCell colSpan={4}>
                         <Typography variant="body2" color="text.secondary">
                           Aún no hay materias primas agregadas.
                         </Typography>
@@ -755,22 +752,6 @@ export default function NuevaCompra() {
                         <TableCell>
                           <TextField
                             size="small"
-                            type="number"
-                            value={item.merma_estandar}
-                            onChange={(e) => {
-                              const value = e.target.value
-                              setBomItems((prev) =>
-                                prev.map((p, i) =>
-                                  i === index ? { ...p, merma_estandar: value } : p
-                                )
-                              )
-                            }}
-                            inputProps={{ min: 0, style: { width: 90 } }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <TextField
-                            size="small"
                             fullWidth
                             value={item.notas}
                             onChange={(e) => {
@@ -810,7 +791,6 @@ export default function NuevaCompra() {
                   {
                     materia_prima_id: '',
                     cantidad_necesaria: 1,
-                    merma_estandar: 0,
                     notas: '',
                   },
                 ])
@@ -831,7 +811,6 @@ export default function NuevaCompra() {
                   <TableRow>
                     <TableCell>Producto componente</TableCell>
                     <TableCell>Cantidad</TableCell>
-                    <TableCell>Merma</TableCell>
                     <TableCell>Notas</TableCell>
                     <TableCell align="right">Acciones</TableCell>
                   </TableRow>
@@ -839,7 +818,7 @@ export default function NuevaCompra() {
                 <TableBody>
                   {componentesItems.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5}>
+                      <TableCell colSpan={4}>
                         <Typography variant="body2" color="text.secondary">
                           Aún no hay componentes agregados.
                         </Typography>
@@ -891,22 +870,6 @@ export default function NuevaCompra() {
                         <TableCell>
                           <TextField
                             size="small"
-                            type="number"
-                            value={item.merma_estandar}
-                            onChange={(e) => {
-                              const value = e.target.value
-                              setComponentesItems((prev) =>
-                                prev.map((p, i) =>
-                                  i === index ? { ...p, merma_estandar: value } : p
-                                )
-                              )
-                            }}
-                            inputProps={{ min: 0, style: { width: 90 } }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <TextField
-                            size="small"
                             fullWidth
                             value={item.notas}
                             onChange={(e) => {
@@ -946,7 +909,6 @@ export default function NuevaCompra() {
                   {
                     componente_id: '',
                     cantidad_necesaria: 1,
-                    merma_estandar: 0,
                     notas: '',
                   },
                 ])
