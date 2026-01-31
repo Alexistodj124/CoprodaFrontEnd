@@ -50,6 +50,22 @@ export default function NuevaCompra() {
   const [nuevoProcesoNombre, setNuevoProcesoNombre] = React.useState('')
   const [nuevoProcesoDescripcion, setNuevoProcesoDescripcion] = React.useState('')
 
+  const procesosRutaOpciones = React.useMemo(() => {
+    return procesosRuta
+      .map((item) => {
+        const procesoInfo = procesosDisponibles.find(
+          (p) => String(p.id) === String(item.proceso_id)
+        )
+        if (!item?.proceso_id) return null
+        return {
+          id: item.proceso_id,
+          nombre: procesoInfo?.nombre || 'Proceso',
+          orden: item.orden,
+        }
+      })
+      .filter(Boolean)
+  }, [procesosRuta, procesosDisponibles])
+
   const [loading, setLoading] = React.useState(false)
   const [mensajeExito, setMensajeExito] = React.useState('')
   const [openSnackbarExito, setOpenSnackbarExito] = React.useState(false)
@@ -304,6 +320,7 @@ export default function NuevaCompra() {
             body: JSON.stringify({
               materia_prima_id: Number(item.materia_prima_id),
               cantidad_necesaria: Number(item.cantidad_necesaria) || 0,
+              proceso_id: item.proceso_id ? Number(item.proceso_id) : null,
               notas: item.notas || null,
             }),
           })
@@ -317,6 +334,7 @@ export default function NuevaCompra() {
             body: JSON.stringify({
               componente_id: Number(item.componente_id),
               cantidad_necesaria: Number(item.cantidad_necesaria) || 0,
+              proceso_id: item.proceso_id ? Number(item.proceso_id) : null,
               notas: item.notas || null,
             }),
           })
@@ -693,6 +711,7 @@ export default function NuevaCompra() {
                   <TableRow>
                     <TableCell>Materia prima</TableCell>
                     <TableCell>Cantidad</TableCell>
+                    <TableCell>Proceso</TableCell>
                     <TableCell>Notas</TableCell>
                     <TableCell align="right">Acciones</TableCell>
                   </TableRow>
@@ -700,7 +719,7 @@ export default function NuevaCompra() {
                 <TableBody>
                   {bomItems.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4}>
+                      <TableCell colSpan={5}>
                         <Typography variant="body2" color="text.secondary">
                           Aún no hay materias primas agregadas.
                         </Typography>
@@ -751,6 +770,29 @@ export default function NuevaCompra() {
                         </TableCell>
                         <TableCell>
                           <TextField
+                            select
+                            size="small"
+                            fullWidth
+                            value={item.proceso_id || ''}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              setBomItems((prev) =>
+                                prev.map((p, i) =>
+                                  i === index ? { ...p, proceso_id: value } : p
+                                )
+                              )
+                            }}
+                          >
+                            {procesosRutaOpciones.map((proc) => (
+                              <MenuItem key={proc.id} value={proc.id}>
+                                {proc.orden != null ? `${proc.orden}. ` : ''}
+                                {proc.nombre}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </TableCell>
+                        <TableCell>
+                          <TextField
                             size="small"
                             fullWidth
                             value={item.notas}
@@ -791,6 +833,7 @@ export default function NuevaCompra() {
                   {
                     materia_prima_id: '',
                     cantidad_necesaria: 1,
+                    proceso_id: '',
                     notas: '',
                   },
                 ])
@@ -811,6 +854,7 @@ export default function NuevaCompra() {
                   <TableRow>
                     <TableCell>Producto componente</TableCell>
                     <TableCell>Cantidad</TableCell>
+                    <TableCell>Proceso</TableCell>
                     <TableCell>Notas</TableCell>
                     <TableCell align="right">Acciones</TableCell>
                   </TableRow>
@@ -818,7 +862,7 @@ export default function NuevaCompra() {
                 <TableBody>
                   {componentesItems.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4}>
+                      <TableCell colSpan={5}>
                         <Typography variant="body2" color="text.secondary">
                           Aún no hay componentes agregados.
                         </Typography>
@@ -869,6 +913,29 @@ export default function NuevaCompra() {
                         </TableCell>
                         <TableCell>
                           <TextField
+                            select
+                            size="small"
+                            fullWidth
+                            value={item.proceso_id || ''}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              setComponentesItems((prev) =>
+                                prev.map((p, i) =>
+                                  i === index ? { ...p, proceso_id: value } : p
+                                )
+                              )
+                            }}
+                          >
+                            {procesosRutaOpciones.map((proc) => (
+                              <MenuItem key={proc.id} value={proc.id}>
+                                {proc.orden != null ? `${proc.orden}. ` : ''}
+                                {proc.nombre}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </TableCell>
+                        <TableCell>
+                          <TextField
                             size="small"
                             fullWidth
                             value={item.notas}
@@ -909,6 +976,7 @@ export default function NuevaCompra() {
                   {
                     componente_id: '',
                     cantidad_necesaria: 1,
+                    proceso_id: '',
                     notas: '',
                   },
                 ])
