@@ -1,0 +1,574 @@
+import * as React from 'react'
+import {
+  Box,
+  Paper,
+  Typography,
+  Stack,
+  TextField,
+  Button,
+  MenuItem,
+  Snackbar,
+  Alert,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Chip,
+  Divider,
+  IconButton,
+} from '@mui/material'
+import RefreshIcon from '@mui/icons-material/Refresh'
+import PlayArrowIcon from '@mui/icons-material/PlayArrow'
+import PauseIcon from '@mui/icons-material/Pause'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import VisibilityIcon from '@mui/icons-material/Visibility'
+import { API_BASE_URL } from '../config/api'
+
+const PRIORIDADES = [
+  { id: 'ALTA', label: 'ALTA' },
+  { id: 'MEDIA', label: 'MEDIA' },
+  { id: 'BAJA', label: 'BAJA' },
+]
+
+const formatDateTime = (value) => {
+  if (!value) return '—'
+  try {
+    return new Date(value).toLocaleString()
+  } catch (_) {
+    return String(value)
+  }
+}
+
+const getProductoNombre = (orden) =>
+  orden?.producto?.nombre ??
+  orden?.producto_nombre ??
+  orden?.productoNombre ??
+  '—'
+
+export default function Produccion() {
+  const [ordenes, setOrdenes] = React.useState([])
+  const [loadingOrdenes, setLoadingOrdenes] = React.useState(false)
+  const [errorOrdenes, setErrorOrdenes] = React.useState('')
+  const [productos, setProductos] = React.useState([])
+  const [selectedOrdenId, setSelectedOrdenId] = React.useState(null)
+  const [detalleOrden, setDetalleOrden] = React.useState(null)
+  const [loadingDetalle, setLoadingDetalle] = React.useState(false)
+  const [snack, setSnack] = React.useState({ open: false, msg: '', severity: 'success' })
+
+  const [form, setForm] = React.useState({
+    codigo: '',
+    productoId: '',
+    cantidadPlaneada: '',
+    prioridad: 'MEDIA',
+    notas: '',
+  })
+
+  const [completarInputs, setCompletarInputs] = React.useState({})
+
+  const cargarOrdenes = async () => {
+    try {
+      setLoadingOrdenes(true)
+      setErrorOrdenes('')
+      const res = await fetch(`${API_BASE_URL}/ordenes-produccion`)
+      if (!res.ok) throw new Error('Error al obtener órdenes de producción')
+      const data = await res.json()
+      setOrdenes(data || [])
+    } catch (err) {
+      console.error(err)
+      setErrorOrdenes('No se pudieron cargar las órdenes')
+    } finally {
+      setLoadingOrdenes(false)
+    }
+  }
+
+  const cargarProductos = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/productos`)
+      if (!res.ok) throw new Error('Error al obtener productos')
+      const data = await res.json()
+      setProductos(data || [])
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const cargarDetalleOrden = async (id) => {
+    if (!id) return
+    try {
+      setLoadingDetalle(true)
+      const res = await fetch(`${API_BASE_URL}/ordenes-produccion/${id}`)
+      if (!res.ok) throw new Error('Error al obtener detalle de orden')
+      const data = await res.json()
+      setDetalleOrden(data)
+    } catch (err) {
+      console.error(err)
+      setDetalleOrden(null)
+    } finally {
+      setLoadingDetalle(false)
+    }
+  }
+
+  React.useEffect(() => {
+    cargarOrdenes()
+    cargarProductos()
+  }, [])
+
+  const handleSelectOrden = (orden) => {
+    const id = orden?.id
+    if (!id) return
+    setSelectedOrdenId(id)
+    cargarDetalleOrden(id)
+  }
+
+  const handleCrearOrden = async (event) => {
+    event.preventDefault()
+    const codigo = form.codigo.trim()
+    const productoId = Number(form.productoId)
+    const cantidadPlaneada = Number(form.cantidadPlaneada)
+    const prioridad = form.prioridad
+    const notas = form.notas.trim() || null
+
+    if (!codigo || !productoId || !cantidadPlaneada) {
+      setSnack({
+        open: true,
+        msg: 'Código, producto y cantidad planeada son requeridos',
+        severity: 'error',
+      })
+      return
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/ordenes-produccion`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          codigo,
+          producto_id: productoId,
+          cantidad_planeada: cantidadPlaneada,
+          prioridad,
+          notas,
+        }),
+      })
+
+      if (!res.ok) {
+        const txt = await res.text()
+        let msg = 'Error al crear orden de producción'
+        try {
+          const parsed = JSON.parse(txt)
+          msg = parsed.error || msg
+        } catch (_) {
+          // noop
+        }
+        setSnack({ open: true, msg, severity: 'error' })
+        return
+      }
+
+      const created = await res.json()
+      setSnack({ open: true, msg: 'Orden creada exitosamente', severity: 'success' })
+      setForm({
+        codigo: '',
+        productoId: '',
+        cantidadPlaneada: '',
+        prioridad: 'MEDIA',
+        notas: '',
+      })
+      await cargarOrdenes()
+      if (created?.id) {
+        setSelectedOrdenId(created.id)
+        setDetalleOrden(created)
+      }
+    } catch (err) {
+      console.error(err)
+      setSnack({
+        open: true,
+        msg: 'Error de red al crear orden',
+        severity: 'error',
+      })
+    }
+  }
+
+  const handleAccionProceso = async (procesoOrdenId, accion, payload) => {
+    if (!selectedOrdenId || !procesoOrdenId) return
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/ordenes-produccion/${selectedOrdenId}/procesos/${procesoOrdenId}/${accion}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload ? JSON.stringify(payload) : null,
+        }
+      )
+
+      if (!res.ok) {
+        const txt = await res.text()
+        let msg = 'No se pudo actualizar el proceso'
+        try {
+          const parsed = JSON.parse(txt)
+          msg = parsed.error || msg
+        } catch (_) {
+          // noop
+        }
+        setSnack({ open: true, msg, severity: 'error' })
+        return
+      }
+
+      setSnack({ open: true, msg: 'Proceso actualizado', severity: 'success' })
+      await cargarDetalleOrden(selectedOrdenId)
+      await cargarOrdenes()
+    } catch (err) {
+      console.error(err)
+      setSnack({
+        open: true,
+        msg: 'Error de red al actualizar proceso',
+        severity: 'error',
+      })
+    }
+  }
+
+  const renderProcesosResumen = (orden) => {
+    const procesos = orden?.procesos || []
+    if (!Array.isArray(procesos) || procesos.length === 0) {
+      return '—'
+    }
+    return (
+      <Stack direction="row" spacing={1} flexWrap="wrap">
+        {procesos.map((p) => (
+          <Chip
+            key={p.id || `${p.proceso_id}-${p.orden}`}
+            size="small"
+            label={`${p.orden ?? ''} ${p.estado ?? ''}`.trim()}
+          />
+        ))}
+      </Stack>
+    )
+  }
+
+  return (
+    <Box sx={{ maxWidth: 1200, mx: 'auto', mt: 3, px: 2 }}>
+      <Stack spacing={3}>
+        <Typography variant="h5" sx={{ fontWeight: 600 }}>
+          Producción
+        </Typography>
+
+        <Paper sx={{ p: 3, borderRadius: 3 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Órdenes de producción
+            </Typography>
+            <Button
+              size="small"
+              startIcon={<RefreshIcon />}
+              onClick={cargarOrdenes}
+              disabled={loadingOrdenes}
+            >
+              Recargar
+            </Button>
+          </Stack>
+
+          {errorOrdenes && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {errorOrdenes}
+            </Alert>
+          )}
+
+          <TableContainer component={Paper} variant="outlined">
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Código</TableCell>
+                  <TableCell>Producto</TableCell>
+                  <TableCell>Cantidad</TableCell>
+                  <TableCell>Estado</TableCell>
+                  <TableCell>Inicio</TableCell>
+                  <TableCell>Fin</TableCell>
+                  <TableCell>Prioridad</TableCell>
+                  <TableCell>Procesos</TableCell>
+                  <TableCell align="right">Acciones</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {ordenes.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9}>
+                      <Typography variant="body2" color="text.secondary">
+                        No hay órdenes de producción.
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  ordenes.map((orden) => (
+                    <TableRow
+                      key={orden.id}
+                      selected={selectedOrdenId === orden.id}
+                      hover
+                    >
+                      <TableCell>{orden.codigo ?? '—'}</TableCell>
+                      <TableCell>{getProductoNombre(orden)}</TableCell>
+                      <TableCell>{orden.cantidad_planeada ?? '—'}</TableCell>
+                      <TableCell>{orden.estado ?? '—'}</TableCell>
+                      <TableCell>{formatDateTime(orden.fecha_inicio)}</TableCell>
+                      <TableCell>{formatDateTime(orden.fecha_fin)}</TableCell>
+                      <TableCell>{orden.prioridad ?? '—'}</TableCell>
+                      <TableCell>{renderProcesosResumen(orden)}</TableCell>
+                      <TableCell align="right">
+                        <IconButton onClick={() => handleSelectOrden(orden)}>
+                          <VisibilityIcon fontSize="small" />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+
+        <Paper sx={{ p: 3, borderRadius: 3 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+            Crear orden de producción
+          </Typography>
+          <form onSubmit={handleCrearOrden}>
+            <Stack spacing={2}>
+              <TextField
+                label="Código"
+                value={form.codigo}
+                onChange={(e) => setForm((p) => ({ ...p, codigo: e.target.value }))}
+                required
+              />
+              <TextField
+                select
+                label="Producto"
+                value={form.productoId}
+                onChange={(e) => setForm((p) => ({ ...p, productoId: e.target.value }))}
+                required
+              >
+                {productos.map((prod) => (
+                  <MenuItem key={prod.id} value={prod.id}>
+                    {prod.nombre}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                label="Cantidad planeada"
+                type="number"
+                value={form.cantidadPlaneada}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, cantidadPlaneada: e.target.value }))
+                }
+                required
+                inputProps={{ min: 0 }}
+              />
+              <TextField
+                select
+                label="Prioridad"
+                value={form.prioridad}
+                onChange={(e) => setForm((p) => ({ ...p, prioridad: e.target.value }))}
+              >
+                {PRIORIDADES.map((item) => (
+                  <MenuItem key={item.id} value={item.id}>
+                    {item.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                label="Notas"
+                multiline
+                minRows={2}
+                value={form.notas}
+                onChange={(e) => setForm((p) => ({ ...p, notas: e.target.value }))}
+              />
+              <Alert severity="info">
+                El producto debe tener ruta de procesos y BOM/Componentes para crear la orden.
+              </Alert>
+              <Button variant="contained" type="submit">
+                Crear orden
+              </Button>
+            </Stack>
+          </form>
+        </Paper>
+
+        <Paper sx={{ p: 3, borderRadius: 3 }}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            sx={{ mb: 2 }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Detalle de orden
+            </Typography>
+            {selectedOrdenId && (
+              <Button
+                size="small"
+                startIcon={<RefreshIcon />}
+                onClick={() => cargarDetalleOrden(selectedOrdenId)}
+                disabled={loadingDetalle}
+              >
+                Recargar
+              </Button>
+            )}
+          </Stack>
+
+          {!selectedOrdenId ? (
+            <Typography variant="body2" color="text.secondary">
+              Selecciona una orden para ver sus procesos.
+            </Typography>
+          ) : loadingDetalle ? (
+            <Typography variant="body2" color="text.secondary">
+              Cargando detalle...
+            </Typography>
+          ) : (
+            <>
+              <Stack spacing={1} sx={{ mb: 2 }}>
+                <Typography variant="subtitle2">
+                  Código: {detalleOrden?.codigo ?? '—'}
+                </Typography>
+                <Typography variant="subtitle2">
+                  Estado: {detalleOrden?.estado ?? '—'}
+                </Typography>
+                <Typography variant="subtitle2">
+                  Producto: {getProductoNombre(detalleOrden)}
+                </Typography>
+                <Typography variant="subtitle2">
+                  Cantidad planeada: {detalleOrden?.cantidad_planeada ?? '—'}
+                </Typography>
+              </Stack>
+
+              <Divider sx={{ mb: 2 }} />
+
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Orden</TableCell>
+                      <TableCell>Proceso</TableCell>
+                      <TableCell>Estado</TableCell>
+                      <TableCell>Cant. entrada</TableCell>
+                      <TableCell>Cant. salida</TableCell>
+                      <TableCell>Cant. perdida</TableCell>
+                      <TableCell align="right">Acciones</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {(detalleOrden?.procesos || []).length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7}>
+                          <Typography variant="body2" color="text.secondary">
+                            No hay procesos para esta orden.
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      detalleOrden?.procesos?.map((proc) => {
+                        const inputs = completarInputs[proc.id] || {
+                          cantidad_entrada: '',
+                          cantidad_salida: '',
+                          cantidad_perdida: '',
+                        }
+                        return (
+                          <TableRow key={proc.id}>
+                            <TableCell>{proc.orden ?? '—'}</TableCell>
+                            <TableCell>{proc.proceso_nombre ?? proc.proceso?.nombre ?? proc.proceso_id ?? '—'}</TableCell>
+                            <TableCell>{proc.estado ?? '—'}</TableCell>
+                            <TableCell sx={{ width: 140 }}>
+                              <TextField
+                                size="small"
+                                type="number"
+                                value={inputs.cantidad_entrada}
+                                onChange={(e) =>
+                                  setCompletarInputs((prev) => ({
+                                    ...prev,
+                                    [proc.id]: {
+                                      ...inputs,
+                                      cantidad_entrada: e.target.value,
+                                    },
+                                  }))
+                                }
+                                inputProps={{ min: 0 }}
+                              />
+                            </TableCell>
+                            <TableCell sx={{ width: 140 }}>
+                              <TextField
+                                size="small"
+                                type="number"
+                                value={inputs.cantidad_salida}
+                                onChange={(e) =>
+                                  setCompletarInputs((prev) => ({
+                                    ...prev,
+                                    [proc.id]: {
+                                      ...inputs,
+                                      cantidad_salida: e.target.value,
+                                    },
+                                  }))
+                                }
+                                inputProps={{ min: 0 }}
+                              />
+                            </TableCell>
+                            <TableCell sx={{ width: 140 }}>
+                              <TextField
+                                size="small"
+                                type="number"
+                                value={inputs.cantidad_perdida}
+                                onChange={(e) =>
+                                  setCompletarInputs((prev) => ({
+                                    ...prev,
+                                    [proc.id]: {
+                                      ...inputs,
+                                      cantidad_perdida: e.target.value,
+                                    },
+                                  }))
+                                }
+                                inputProps={{ min: 0 }}
+                              />
+                            </TableCell>
+                            <TableCell align="right">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleAccionProceso(proc.id, 'iniciar')}
+                              >
+                                <PlayArrowIcon fontSize="small" />
+                              </IconButton>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleAccionProceso(proc.id, 'pausar')}
+                              >
+                                <PauseIcon fontSize="small" />
+                              </IconButton>
+                              <IconButton
+                                size="small"
+                                onClick={() =>
+                                  handleAccionProceso(proc.id, 'completar', {
+                                    cantidad_entrada: Number(inputs.cantidad_entrada) || 0,
+                                    cantidad_salida: Number(inputs.cantidad_salida) || 0,
+                                    cantidad_perdida: Number(inputs.cantidad_perdida) || 0,
+                                  })
+                                }
+                              >
+                                <CheckCircleIcon fontSize="small" />
+                              </IconButton>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </>
+          )}
+        </Paper>
+      </Stack>
+
+      <Snackbar
+        open={snack.open}
+        autoHideDuration={3000}
+        onClose={() => setSnack((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity={snack.severity}>{snack.msg}</Alert>
+      </Snackbar>
+    </Box>
+  )
+}

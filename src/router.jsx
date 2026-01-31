@@ -11,6 +11,7 @@ import Reportes from './pages/Reportes.jsx'
 import Clientes from './pages/Clientes.jsx'
 import Pedidos from './pages/Pedidos.jsx'
 import Ordenes from './pages/Ordenes.jsx'
+import Produccion from './pages/Produccion.jsx'
 import Bodega from './pages/Bodega.jsx'
 import Bancos from './pages/Bancos.jsx'
 import Abonos from './pages/Abonos.jsx'
@@ -75,6 +76,14 @@ const router = createBrowserRouter(
           element: (
             <RequirePermiso permisos={["Produccion", "Ventas"]}>
               <Ordenes />
+            </RequirePermiso>
+          ),
+        },
+        {
+          path: 'produccion',
+          element: (
+            <RequirePermiso permiso="Produccion">
+              <Produccion />
             </RequirePermiso>
           ),
         },

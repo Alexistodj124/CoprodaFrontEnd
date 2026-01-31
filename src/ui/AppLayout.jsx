@@ -61,6 +61,11 @@ export default function AppLayout() {
                   Ordenes
                 </Button>
               ) : null}
+              {canAccess('Produccion') ? (
+                <Button color="inherit" component={RouterLink} to="/produccion">
+                  Producción
+                </Button>
+              ) : null}
               {canAccess('Bodega') ? (
                 <Button color="inherit" component={RouterLink} to="/bodega">
                   Bodega
