@@ -23,6 +23,7 @@ const modules = [
   { to: '/clientes', permiso: 'Clientes', altPermisos: ['ClientesVentas', 'ClientesFinanzas'], title: 'Clientes', icon: PortraitIcon, subtitle: 'Historial y abonos por cliente' },
   { to: '/abonos', permiso: 'Abonos', title: 'Abonos', icon: PaymentsIcon, subtitle: 'Abonos aplicados por cliente' },
   { to: '/bancos', permiso: 'Bancos', title: 'Bancos', icon: AccountBalanceIcon, subtitle: 'Pagos sin asignar' },
+  { to: '/stocks', permiso: 'maestro', title: 'Stocks', icon: InventoryIcon, subtitle: 'Stocks de productos y materias primas' },
   { to: '/', title: 'Inicio', icon: InventoryIcon, subtitle: 'Volver al panel principal' },
 ]
 

@@ -15,6 +15,7 @@ import Produccion from './pages/Produccion.jsx'
 import Bodega from './pages/Bodega.jsx'
 import Bancos from './pages/Bancos.jsx'
 import Abonos from './pages/Abonos.jsx'
+import Stocks from './pages/Stocks.jsx'
 import { RequireAuth, RequirePermiso } from './ProtectedRoutes.jsx'
 
 const router = createBrowserRouter(
@@ -108,6 +109,14 @@ const router = createBrowserRouter(
           element: (
             <RequirePermiso permiso="Abonos">
               <Abonos />
+            </RequirePermiso>
+          ),
+        },
+        {
+          path: 'stocks',
+          element: (
+            <RequirePermiso permisos={['maestro']}>
+              <Stocks />
             </RequirePermiso>
           ),
         },

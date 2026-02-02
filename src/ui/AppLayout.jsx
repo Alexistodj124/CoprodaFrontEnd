@@ -91,6 +91,11 @@ export default function AppLayout() {
                   Reportes
                 </Button>
               ) : null}
+              {canAccess('maestro') ? (
+                <Button color="inherit" component={RouterLink} to="/stocks">
+                  Stocks
+                </Button>
+              ) : null}
 
               {/* Mostrar usuario + Logout */}
               <Typography
