@@ -68,6 +68,13 @@ export default function Produccion() {
 
   const [completarInputs, setCompletarInputs] = React.useState({})
 
+  const productosById = React.useMemo(() => {
+    return productos.reduce((acc, item) => {
+      if (item?.id != null) acc[String(item.id)] = item
+      return acc
+    }, {})
+  }, [productos])
+
   const cargarOrdenes = async () => {
     try {
       setLoadingOrdenes(true)
@@ -75,7 +82,24 @@ export default function Produccion() {
       const res = await fetch(`${API_BASE_URL}/ordenes-produccion`)
       if (!res.ok) throw new Error('Error al obtener órdenes de producción')
       const data = await res.json()
-      setOrdenes(data || [])
+      const ordenesBase = Array.isArray(data) ? data : []
+      const ordenesConProcesos = await Promise.all(
+        ordenesBase.map(async (orden) => {
+          if (!orden?.id) return { ...orden, procesos: [] }
+          try {
+            const resProcesos = await fetch(
+              `${API_BASE_URL}/ordenes-produccion/${orden.id}/procesos`
+            )
+            if (!resProcesos.ok) throw new Error('Error al obtener procesos')
+            const procesos = await resProcesos.json()
+            return { ...orden, procesos: procesos || [] }
+          } catch (err) {
+            console.error(err)
+            return { ...orden, procesos: [] }
+          }
+        })
+      )
+      setOrdenes(ordenesConProcesos)
     } catch (err) {
       console.error(err)
       setErrorOrdenes('No se pudieron cargar las órdenes')
@@ -102,7 +126,12 @@ export default function Produccion() {
       const res = await fetch(`${API_BASE_URL}/ordenes-produccion/${id}`)
       if (!res.ok) throw new Error('Error al obtener detalle de orden')
       const data = await res.json()
-      setDetalleOrden(data)
+
+      const resProcesos = await fetch(`${API_BASE_URL}/ordenes-produccion/${id}/procesos`)
+      if (!resProcesos.ok) throw new Error('Error al obtener procesos de orden')
+      const procesos = await resProcesos.json()
+
+      setDetalleOrden({ ...data, procesos: procesos || [] })
     } catch (err) {
       console.error(err)
       setDetalleOrden(null)
@@ -228,6 +257,18 @@ export default function Produccion() {
     }
   }
 
+  const buildCompletarPayload = (inputs, parcial) => {
+    const payload = {
+      cantidad_entrada: Number(inputs.cantidad_entrada) || 0,
+      cantidad_salida: Number(inputs.cantidad_salida) || 0,
+    }
+    if (!parcial) {
+      payload.cantidad_perdida = Number(inputs.cantidad_perdida) || 0
+    }
+    if (parcial) payload.parcial = true
+    return payload
+  }
+
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', mt: 3, px: 2 }}>
       <Stack spacing={3}>
@@ -264,6 +305,10 @@ export default function Produccion() {
             <Stack spacing={2}>
               {ordenes.map((orden) => {
                 const procesosOrdenados = ordenarProcesos(orden?.procesos || [])
+                const producto =
+                  orden?.producto ||
+                  productosById[String(orden?.producto_id ?? orden?.productoId ?? '')]
+                const productoNombre = getProductoNombre({ ...orden, producto })
                 return (
                   <Paper key={orden.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                     <Stack
@@ -278,7 +323,7 @@ export default function Produccion() {
                           Orden {orden.codigo ?? '—'}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          Producto: {getProductoNombre(orden)}
+                          Producto: {productoNombre}
                         </Typography>
                       </Stack>
                       <Button
@@ -447,6 +492,12 @@ export default function Produccion() {
             </Typography>
           ) : (
             <>
+              {(() => {
+                const producto =
+                  detalleOrden?.producto ||
+                  productosById[String(detalleOrden?.producto_id ?? detalleOrden?.productoId ?? '')]
+                const productoNombre = getProductoNombre({ ...detalleOrden, producto })
+                return (
               <Stack spacing={1} sx={{ mb: 2 }}>
                 <Typography variant="subtitle2">
                   Código: {detalleOrden?.codigo ?? '—'}
@@ -455,12 +506,14 @@ export default function Produccion() {
                   Estado: {detalleOrden?.estado ?? '—'}
                 </Typography>
                 <Typography variant="subtitle2">
-                  Producto: {getProductoNombre(detalleOrden)}
+                  Producto: {productoNombre}
                 </Typography>
                 <Typography variant="subtitle2">
                   Cantidad planeada: {detalleOrden?.cantidad_planeada ?? '—'}
                 </Typography>
               </Stack>
+                )
+              })()}
 
               <Divider sx={{ mb: 2 }} />
 
@@ -562,14 +615,26 @@ export default function Produccion() {
                               >
                                 <PauseIcon fontSize="small" />
                               </IconButton>
+                              <Button
+                                size="small"
+                                onClick={() =>
+                                  handleAccionProceso(
+                                    proc.id,
+                                    'completar',
+                                    buildCompletarPayload(inputs, true)
+                                  )
+                                }
+                              >
+                                Parcial
+                              </Button>
                               <IconButton
                                 size="small"
                                 onClick={() =>
-                                  handleAccionProceso(proc.id, 'completar', {
-                                    cantidad_entrada: Number(inputs.cantidad_entrada) || 0,
-                                    cantidad_salida: Number(inputs.cantidad_salida) || 0,
-                                    cantidad_perdida: Number(inputs.cantidad_perdida) || 0,
-                                  })
+                                  handleAccionProceso(
+                                    proc.id,
+                                    'completar',
+                                    buildCompletarPayload(inputs, false)
+                                  )
                                 }
                               >
                                 <CheckCircleIcon fontSize="small" />
