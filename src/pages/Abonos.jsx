@@ -16,6 +16,8 @@ import {
 import dayjs from 'dayjs'
 import { API_BASE_URL } from '../config/api'
 
+const getAbonoFecha = (abono) => abono?.fecha || abono?.creado_en || null
+
 export default function Abonos() {
   const [query, setQuery] = React.useState('')
   const [clientesRaw, setClientesRaw] = React.useState([])
@@ -59,9 +61,18 @@ export default function Abonos() {
 
   const clientes = React.useMemo(() => {
     const abonosByCliente = new Map()
+    const hoy = dayjs()
+    const inicioMes = hoy.startOf('month')
+    const finMes = hoy.endOf('month')
+
     for (const abono of bancos || []) {
       const id = abono?.cliente_id
       if (id == null) continue
+      const fecha = getAbonoFecha(abono)
+      if (!fecha) continue
+      const fechaAbono = dayjs(fecha)
+      if (!fechaAbono.isValid()) continue
+      if (fechaAbono.isBefore(inicioMes) || fechaAbono.isAfter(finMes)) continue
       if (!abonosByCliente.has(id)) {
         abonosByCliente.set(id, [])
       }
