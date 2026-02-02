@@ -87,8 +87,8 @@ const buildCodigoCliente = ({ nombre, departamento }) => {
 
 export default function Clientes() {
   const { user, hasAnyPermiso } = useAuth()
-  const isMaestro = hasAnyPermiso(['Maestro'])
-  const shouldFilterPorUsuario = hasAnyPermiso(['ClientesVentas'])
+  const isMaestro = hasAnyPermiso(['maestro'])
+  const shouldFilterPorUsuario = hasAnyPermiso(['ClientesVentas']) && !isMaestro
   const [query, setQuery] = React.useState('')
   const [filtroActivo, setFiltroActivo] = React.useState('todos')
   const [ordenes, setOrdenes] = React.useState([])
