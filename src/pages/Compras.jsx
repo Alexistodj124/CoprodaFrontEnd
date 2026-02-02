@@ -52,6 +52,9 @@ export default function NuevaCompra() {
   const [openNuevoProceso, setOpenNuevoProceso] = React.useState(false)
   const [nuevoProcesoNombre, setNuevoProcesoNombre] = React.useState('')
   const [nuevoProcesoDescripcion, setNuevoProcesoDescripcion] = React.useState('')
+  const [openNuevaMP, setOpenNuevaMP] = React.useState(false)
+  const [nuevaMPNombre, setNuevaMPNombre] = React.useState('')
+  const [nuevaMPCodigo, setNuevaMPCodigo] = React.useState('')
   const isEditMode = productoId != null
 
   const procesosRutaOpciones = React.useMemo(() => {
@@ -107,7 +110,7 @@ export default function NuevaCompra() {
 
   const cargarMateriasPrimas = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/materias_primas`)
+      const res = await fetch(`${API_BASE_URL}/materias-primas`)
       if (!res.ok) throw new Error('Error al obtener materias primas')
       const data = await res.json()
       setMateriasPrimasDisponibles(data || [])
@@ -303,6 +306,50 @@ export default function NuevaCompra() {
         setProcesoSeleccionado(created.id)
       }
       setOpenNuevoProceso(false)
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  const handleOpenNuevaMP = () => {
+    setNuevaMPNombre('')
+    setNuevaMPCodigo('')
+    setOpenNuevaMP(true)
+  }
+
+  const handleCloseNuevaMP = () => {
+    setOpenNuevaMP(false)
+  }
+
+  const handleGuardarNuevaMP = async () => {
+    const nombre = nuevaMPNombre.trim()
+    const codigo = nuevaMPCodigo.trim()
+    if (!nombre || !codigo) return
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/materias-primas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, codigo }),
+      })
+
+      if (!res.ok) {
+        const errText = await res.text()
+        let msg = 'Error creando materia prima'
+        try {
+          const parsed = JSON.parse(errText)
+          msg = parsed.error || msg
+        } catch (_) {
+          // noop
+        }
+        setSnack({ open: true, msg, severity: 'error' })
+        return
+      }
+
+      await res.json()
+      await cargarMateriasPrimas()
+      setOpenNuevaMP(false)
+      setSnack({ open: true, msg: 'Materia prima creada', severity: 'success' })
     } catch (error) {
       console.error(error)
     }
@@ -807,9 +854,14 @@ export default function NuevaCompra() {
 
             <Divider />
 
-            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              Materias primas
-            </Typography>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                Materias primas
+              </Typography>
+              <Button size="small" variant="text" onClick={handleOpenNuevaMP}>
+                Crear nueva MP
+              </Button>
+            </Stack>
 
             <TableContainer component={Paper} variant="outlined">
               <Table size="small">
@@ -1145,6 +1197,31 @@ export default function NuevaCompra() {
           <DialogActions>
             <Button onClick={handleCloseNuevoProceso}>Cancelar</Button>
             <Button variant="contained" onClick={handleGuardarNuevoProceso}>
+              Guardar
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog open={openNuevaMP} onClose={handleCloseNuevaMP} fullWidth maxWidth="sm">
+          <DialogTitle>Nueva materia prima</DialogTitle>
+          <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <TextField
+              label="Código"
+              value={nuevaMPCodigo}
+              onChange={(e) => setNuevaMPCodigo(e.target.value)}
+              required
+            />
+            <TextField
+              label="Nombre de la materia prima"
+              value={nuevaMPNombre}
+              onChange={(e) => setNuevaMPNombre(e.target.value)}
+              autoFocus
+              required
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseNuevaMP}>Cancelar</Button>
+            <Button variant="contained" onClick={handleGuardarNuevaMP}>
               Guardar
             </Button>
           </DialogActions>
