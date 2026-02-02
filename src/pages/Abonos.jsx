@@ -13,6 +13,9 @@ import {
   TextField,
   Chip,
 } from '@mui/material'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import dayjs from 'dayjs'
 import { API_BASE_URL } from '../config/api'
 
@@ -23,6 +26,7 @@ export default function Abonos() {
   const [clientesRaw, setClientesRaw] = React.useState([])
   const [bancos, setBancos] = React.useState([])
   const [clienteSel, setClienteSel] = React.useState(null)
+  const [fechaConsulta, setFechaConsulta] = React.useState(dayjs())
 
   const clientesById = React.useMemo(() => {
     const map = {}
@@ -123,6 +127,11 @@ export default function Abonos() {
     return arr
   }, [bancos, clientesRaw, query])
 
+  React.useEffect(() => {
+    if (!clienteSel) return
+    setFechaConsulta(dayjs())
+  }, [clienteSel])
+
   const saldoCliente = React.useMemo(() => {
     if (!clienteSel) return 0
     const raw = clientesById[clienteSel.id]?.saldo ?? clienteSel.saldo ?? 0
@@ -130,14 +139,29 @@ export default function Abonos() {
     return Number.isFinite(num) ? num : 0
   }, [clienteSel, clientesById])
 
+  const abonosClienteFiltrados = React.useMemo(() => {
+    if (!clienteSel) return []
+    const base = fechaConsulta && dayjs(fechaConsulta).isValid() ? dayjs(fechaConsulta) : dayjs()
+    const inicioMes = base.startOf('month')
+    const finMes = base.endOf('month')
+    return (bancos || []).filter((abono) => {
+      if (String(abono?.cliente_id) !== String(clienteSel.id)) return false
+      const fecha = getAbonoFecha(abono)
+      if (!fecha) return false
+      const fechaAbono = dayjs(fecha)
+      if (!fechaAbono.isValid()) return false
+      return !fechaAbono.isBefore(inicioMes) && !fechaAbono.isAfter(finMes)
+    })
+  }, [clienteSel, fechaConsulta, bancos])
+
   const abonosCliente = React.useMemo(() => {
     if (!clienteSel) return 0
-    const total = (clienteSel.abonos || []).reduce(
+    const total = abonosClienteFiltrados.reduce(
       (sum, abono) => sum + Number(abono.monto || 0),
       0
     )
     return Number.isFinite(total) ? total : 0
-  }, [clienteSel])
+  }, [clienteSel, abonosClienteFiltrados])
 
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', mt: 3 }}>
@@ -211,7 +235,8 @@ export default function Abonos() {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'flex-start',
-              gap: 1,
+              gap: 2,
+              flexWrap: 'wrap',
             }}
           >
             <Box>
@@ -224,6 +249,15 @@ export default function Abonos() {
                 </Typography>
               )}
             </Box>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePicker
+                label="Fecha a consultar"
+                value={fechaConsulta}
+                onChange={(value) => setFechaConsulta(value || dayjs())}
+                views={['year', 'month']}
+                slotProps={{ textField: { size: 'small', sx: { minWidth: 200 } } }}
+              />
+            </LocalizationProvider>
           </Box>
 
           {clienteSel && (
@@ -270,7 +304,7 @@ export default function Abonos() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {(clienteSel?.abonos || []).map((a) => (
+              {abonosClienteFiltrados.map((a) => (
                 <TableRow key={a.id}>
                   <TableCell>{a.fecha || a.creado_en || '—'}</TableCell>
                   <TableCell>{a.referencia || '—'}</TableCell>
@@ -279,7 +313,7 @@ export default function Abonos() {
                   <TableCell align="right">Q {Number(a.monto || 0).toFixed(2)}</TableCell>
                 </TableRow>
               ))}
-              {clienteSel && (clienteSel.abonos || []).length === 0 && (
+              {clienteSel && abonosClienteFiltrados.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5}>
                     <Typography align="center" color="text.secondary">
