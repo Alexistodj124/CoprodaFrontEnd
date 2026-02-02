@@ -17,6 +17,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import dayjs from 'dayjs'
+import 'dayjs/locale/es'
 import { API_BASE_URL } from '../config/api'
 
 const getAbonoFecha = (abono) => abono?.fecha || abono?.creado_en || null
@@ -249,7 +250,7 @@ export default function Abonos() {
                 </Typography>
               )}
             </Box>
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="es">
               <DatePicker
                 label="Fecha a consultar"
                 value={fechaConsulta}
