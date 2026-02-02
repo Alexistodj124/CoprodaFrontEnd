@@ -15,7 +15,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Chip,
   Divider,
   IconButton,
 } from '@mui/material'
@@ -32,19 +31,21 @@ const PRIORIDADES = [
   { id: 'BAJA', label: 'BAJA' },
 ]
 
-const formatDateTime = (value) => {
-  if (!value) return '—'
-  try {
-    return new Date(value).toLocaleString()
-  } catch (_) {
-    return String(value)
-  }
-}
-
 const getProductoNombre = (orden) =>
   orden?.producto?.nombre ??
   orden?.producto_nombre ??
   orden?.productoNombre ??
+  '—'
+
+const ordenarProcesos = (procesos) =>
+  procesos
+    .slice()
+    .sort((a, b) => (a?.orden ?? 0) - (b?.orden ?? 0))
+
+const getProcesoNombre = (proceso) =>
+  proceso?.proceso_nombre ??
+  proceso?.proceso?.nombre ??
+  proceso?.proceso_id ??
   '—'
 
 export default function Produccion() {
@@ -227,24 +228,6 @@ export default function Produccion() {
     }
   }
 
-  const renderProcesosResumen = (orden) => {
-    const procesos = orden?.procesos || []
-    if (!Array.isArray(procesos) || procesos.length === 0) {
-      return '—'
-    }
-    return (
-      <Stack direction="row" spacing={1} flexWrap="wrap">
-        {procesos.map((p) => (
-          <Chip
-            key={p.id || `${p.proceso_id}-${p.orden}`}
-            size="small"
-            label={`${p.orden ?? ''} ${p.estado ?? ''}`.trim()}
-          />
-        ))}
-      </Stack>
-    )
-  }
-
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', mt: 3, px: 2 }}>
       <Stack spacing={3}>
@@ -273,56 +256,99 @@ export default function Produccion() {
             </Alert>
           )}
 
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Código</TableCell>
-                  <TableCell>Producto</TableCell>
-                  <TableCell>Cantidad</TableCell>
-                  <TableCell>Estado</TableCell>
-                  <TableCell>Inicio</TableCell>
-                  <TableCell>Fin</TableCell>
-                  <TableCell>Prioridad</TableCell>
-                  <TableCell>Procesos</TableCell>
-                  <TableCell align="right">Acciones</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {ordenes.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={9}>
-                      <Typography variant="body2" color="text.secondary">
-                        No hay órdenes de producción.
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  ordenes.map((orden) => (
-                    <TableRow
-                      key={orden.id}
-                      selected={selectedOrdenId === orden.id}
-                      hover
+          {ordenes.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              No hay órdenes de producción.
+            </Typography>
+          ) : (
+            <Stack spacing={2}>
+              {ordenes.map((orden) => {
+                const procesosOrdenados = ordenarProcesos(orden?.procesos || [])
+                return (
+                  <Paper key={orden.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                    <Stack
+                      direction={{ xs: 'column', sm: 'row' }}
+                      justifyContent="space-between"
+                      alignItems={{ xs: 'flex-start', sm: 'center' }}
+                      spacing={1}
+                      sx={{ mb: 1 }}
                     >
-                      <TableCell>{orden.codigo ?? '—'}</TableCell>
-                      <TableCell>{getProductoNombre(orden)}</TableCell>
-                      <TableCell>{orden.cantidad_planeada ?? '—'}</TableCell>
-                      <TableCell>{orden.estado ?? '—'}</TableCell>
-                      <TableCell>{formatDateTime(orden.fecha_inicio)}</TableCell>
-                      <TableCell>{formatDateTime(orden.fecha_fin)}</TableCell>
-                      <TableCell>{orden.prioridad ?? '—'}</TableCell>
-                      <TableCell>{renderProcesosResumen(orden)}</TableCell>
-                      <TableCell align="right">
-                        <IconButton onClick={() => handleSelectOrden(orden)}>
-                          <VisibilityIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                      <Stack spacing={0.5}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                          Orden {orden.codigo ?? '—'}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Producto: {getProductoNombre(orden)}
+                        </Typography>
+                      </Stack>
+                      <Button
+                        size="small"
+                        startIcon={<VisibilityIcon />}
+                        onClick={() => handleSelectOrden(orden)}
+                      >
+                        Ver detalle
+                      </Button>
+                    </Stack>
+
+                    {procesosOrdenados.length === 0 ? (
+                      <Typography variant="body2" color="text.secondary">
+                        Esta orden no tiene procesos.
+                      </Typography>
+                    ) : (
+                      <TableContainer component={Paper} variant="outlined">
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              <TableCell />
+                              {procesosOrdenados.map((proc) => (
+                                <TableCell key={proc.id} align="center">
+                                  {getProcesoNombre(proc)}
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            <TableRow>
+                              <TableCell>Estado</TableCell>
+                              {procesosOrdenados.map((proc) => (
+                                <TableCell key={proc.id} align="center">
+                                  {proc.estado ?? '—'}
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                            <TableRow>
+                              <TableCell>Cant. entrada</TableCell>
+                              {procesosOrdenados.map((proc) => (
+                                <TableCell key={proc.id} align="center">
+                                  {proc.cantidad_entrada ?? '—'}
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                            <TableRow>
+                              <TableCell>Cant. salida</TableCell>
+                              {procesosOrdenados.map((proc) => (
+                                <TableCell key={proc.id} align="center">
+                                  {proc.cantidad_salida ?? '—'}
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                            <TableRow>
+                              <TableCell>Cant. perdida</TableCell>
+                              {procesosOrdenados.map((proc) => (
+                                <TableCell key={proc.id} align="center">
+                                  {proc.cantidad_perdida ?? '—'}
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    )}
+                  </Paper>
+                )
+              })}
+            </Stack>
+          )}
         </Paper>
 
         <Paper sx={{ p: 3, borderRadius: 3 }}>
