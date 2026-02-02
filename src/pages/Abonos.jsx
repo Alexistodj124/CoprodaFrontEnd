@@ -24,6 +24,14 @@ export default function Abonos() {
   const [bancos, setBancos] = React.useState([])
   const [clienteSel, setClienteSel] = React.useState(null)
 
+  const clientesById = React.useMemo(() => {
+    const map = {}
+    for (const cli of clientesRaw || []) {
+      if (cli?.id != null) map[cli.id] = cli
+    }
+    return map
+  }, [clientesRaw])
+
   React.useEffect(() => {
     const cargarClientes = async () => {
       try {
@@ -117,10 +125,10 @@ export default function Abonos() {
 
   const saldoCliente = React.useMemo(() => {
     if (!clienteSel) return 0
-    const raw = clienteSel.saldo ?? 0
+    const raw = clientesById[clienteSel.id]?.saldo ?? clienteSel.saldo ?? 0
     const num = Number(raw)
     return Number.isFinite(num) ? num : 0
-  }, [clienteSel])
+  }, [clienteSel, clientesById])
 
   const abonosCliente = React.useMemo(() => {
     if (!clienteSel) return 0
