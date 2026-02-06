@@ -17,9 +17,11 @@ import {
   TableRow,
   Divider,
 } from '@mui/material'
+import DeleteIcon from '@mui/icons-material/Delete'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import { API_BASE_URL } from '../config/api'
+import { useAuth } from '../context/AuthContext'
 
 const PRIORIDADES = [
   { id: 'ALTA', label: 'ALTA' },
@@ -45,6 +47,8 @@ const getProcesoNombre = (proceso) =>
   '—'
 
 export default function Produccion() {
+  const { hasAnyPermiso } = useAuth()
+  const canDeleteOrden = hasAnyPermiso(['maestro'])
   const [ordenes, setOrdenes] = React.useState([])
   const [loadingOrdenes, setLoadingOrdenes] = React.useState(false)
   const [errorOrdenes, setErrorOrdenes] = React.useState('')
@@ -146,6 +150,42 @@ export default function Produccion() {
     if (!id) return
     setSelectedOrdenId(id)
     cargarDetalleOrden(id)
+  }
+
+  const handleEliminarOrden = async (ordenId) => {
+    if (!ordenId) return
+    const ok = window.confirm('¿Eliminar esta orden de producción?')
+    if (!ok) return
+    try {
+      const res = await fetch(`${API_BASE_URL}/ordenes-produccion/${ordenId}`, {
+        method: 'DELETE',
+      })
+      if (!res.ok) {
+        const txt = await res.text()
+        let msg = 'No se pudo eliminar la orden'
+        try {
+          const parsed = JSON.parse(txt)
+          msg = parsed.error || msg
+        } catch (_) {
+          // noop
+        }
+        setSnack({ open: true, msg, severity: 'error' })
+        return
+      }
+      setSnack({ open: true, msg: 'Orden eliminada', severity: 'success' })
+      if (selectedOrdenId === ordenId) {
+        setSelectedOrdenId(null)
+        setDetalleOrden(null)
+      }
+      await cargarOrdenes()
+    } catch (err) {
+      console.error(err)
+      setSnack({
+        open: true,
+        msg: 'Error de red al eliminar orden',
+        severity: 'error',
+      })
+    }
   }
 
   const handleCrearOrden = async (event) => {
@@ -363,13 +403,15 @@ export default function Produccion() {
             </Alert>
           )}
 
-          {ordenes.length === 0 ? (
+          {ordenes.filter((orden) => orden?.estado !== 'COMPLETADA').length === 0 ? (
             <Typography variant="body2" color="text.secondary">
               No hay órdenes de producción.
             </Typography>
           ) : (
             <Stack spacing={2}>
-              {ordenes.map((orden) => {
+              {ordenes
+                .filter((orden) => orden?.estado !== 'COMPLETADA')
+                .map((orden) => {
                 const procesosOrdenados = ordenarProcesos(orden?.procesos || [])
                 const producto =
                   orden?.producto ||
@@ -392,13 +434,25 @@ export default function Produccion() {
                           Producto: {productoNombre}
                         </Typography>
                       </Stack>
-                      <Button
-                        size="small"
-                        startIcon={<VisibilityIcon />}
-                        onClick={() => handleSelectOrden(orden)}
-                      >
-                        Ver detalle
-                      </Button>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Button
+                          size="small"
+                          startIcon={<VisibilityIcon />}
+                          onClick={() => handleSelectOrden(orden)}
+                        >
+                          Ver detalle
+                        </Button>
+                        {canDeleteOrden && (
+                          <Button
+                            size="small"
+                            color="error"
+                            startIcon={<DeleteIcon />}
+                            onClick={() => handleEliminarOrden(orden.id)}
+                          >
+                            Eliminar
+                          </Button>
+                        )}
+                      </Stack>
                     </Stack>
 
                     {procesosOrdenados.length === 0 ? (
