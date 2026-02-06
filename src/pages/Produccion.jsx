@@ -63,6 +63,7 @@ export default function Produccion() {
   const [detalleOrden, setDetalleOrden] = React.useState(null)
   const [loadingDetalle, setLoadingDetalle] = React.useState(false)
   const [openDetalle, setOpenDetalle] = React.useState(false)
+  const [openCrearOrden, setOpenCrearOrden] = React.useState(false)
   const [snack, setSnack] = React.useState({ open: false, msg: '', severity: 'success' })
 
   const [form, setForm] = React.useState({
@@ -183,6 +184,14 @@ export default function Produccion() {
     setOpenDetalle(false)
   }
 
+  const handleOpenCrearOrden = () => {
+    setOpenCrearOrden(true)
+  }
+
+  const handleCloseCrearOrden = () => {
+    setOpenCrearOrden(false)
+  }
+
   const handleEliminarOrden = async (ordenId) => {
     if (!ordenId) return
     const ok = window.confirm('¿Eliminar esta orden de producción?')
@@ -264,6 +273,7 @@ export default function Produccion() {
 
       const created = await res.json()
       setSnack({ open: true, msg: 'Orden creada exitosamente', severity: 'success' })
+      setOpenCrearOrden(false)
       setForm({
         codigo: '',
         productoId: '',
@@ -409,9 +419,14 @@ export default function Produccion() {
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', mt: 3, px: 2 }}>
       <Stack spacing={3}>
-        <Typography variant="h5" sx={{ fontWeight: 600 }}>
-          Producción
-        </Typography>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Typography variant="h5" sx={{ fontWeight: 600 }}>
+            Producción
+          </Typography>
+          <Button variant="contained" onClick={handleOpenCrearOrden}>
+            Crear orden
+          </Button>
+        </Stack>
 
         <Paper sx={{ p: 3, borderRadius: 3 }}>
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
@@ -545,70 +560,6 @@ export default function Produccion() {
               })}
             </Stack>
           )}
-        </Paper>
-
-        <Paper sx={{ p: 3, borderRadius: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-            Crear orden de producción
-          </Typography>
-          <form onSubmit={handleCrearOrden}>
-            <Stack spacing={2}>
-              <TextField
-                label="Código"
-                value={form.codigo}
-                onChange={(e) => setForm((p) => ({ ...p, codigo: e.target.value }))}
-                required
-              />
-              <TextField
-                select
-                label="Producto"
-                value={form.productoId}
-                onChange={(e) => setForm((p) => ({ ...p, productoId: e.target.value }))}
-                required
-              >
-                {productos.map((prod) => (
-                  <MenuItem key={prod.id} value={prod.id}>
-                    {prod.nombre}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <TextField
-                label="Cantidad planeada"
-                type="number"
-                value={form.cantidadPlaneada}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, cantidadPlaneada: e.target.value }))
-                }
-                required
-                inputProps={{ min: 0 }}
-              />
-              <TextField
-                select
-                label="Prioridad"
-                value={form.prioridad}
-                onChange={(e) => setForm((p) => ({ ...p, prioridad: e.target.value }))}
-              >
-                {PRIORIDADES.map((item) => (
-                  <MenuItem key={item.id} value={item.id}>
-                    {item.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <TextField
-                label="Notas"
-                multiline
-                minRows={2}
-                value={form.notas}
-                onChange={(e) => setForm((p) => ({ ...p, notas: e.target.value }))}
-              />
-              <Alert severity="info">
-                El producto debe tener ruta de procesos y BOM/Componentes para crear la orden.
-              </Alert>
-              <Button variant="contained" type="submit">
-                Crear orden
-              </Button>
-            </Stack>
-          </form>
         </Paper>
 
         <Dialog open={openDetalle} onClose={handleCloseDetalle} fullWidth maxWidth="lg">
@@ -765,6 +716,72 @@ export default function Produccion() {
               </Button>
             )}
             <Button onClick={handleCloseDetalle}>Cerrar</Button>
+          </DialogActions>
+        </Dialog>
+        <Dialog open={openCrearOrden} onClose={handleCloseCrearOrden} fullWidth maxWidth="sm">
+          <DialogTitle>Crear orden de producción</DialogTitle>
+          <DialogContent dividers>
+            <form id="crear-orden-form" onSubmit={handleCrearOrden}>
+              <Stack spacing={2}>
+                <TextField
+                  label="Código"
+                  value={form.codigo}
+                  onChange={(e) => setForm((p) => ({ ...p, codigo: e.target.value }))}
+                  required
+                />
+                <TextField
+                  select
+                  label="Producto"
+                  value={form.productoId}
+                  onChange={(e) => setForm((p) => ({ ...p, productoId: e.target.value }))}
+                  required
+                >
+                  {productos.map((prod) => (
+                    <MenuItem key={prod.id} value={prod.id}>
+                      {prod.nombre}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <TextField
+                  label="Cantidad planeada"
+                  type="number"
+                  value={form.cantidadPlaneada}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, cantidadPlaneada: e.target.value }))
+                  }
+                  required
+                  inputProps={{ min: 0 }}
+                />
+                <TextField
+                  select
+                  label="Prioridad"
+                  value={form.prioridad}
+                  onChange={(e) => setForm((p) => ({ ...p, prioridad: e.target.value }))}
+                >
+                  {PRIORIDADES.map((item) => (
+                    <MenuItem key={item.id} value={item.id}>
+                      {item.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <TextField
+                  label="Notas"
+                  multiline
+                  minRows={2}
+                  value={form.notas}
+                  onChange={(e) => setForm((p) => ({ ...p, notas: e.target.value }))}
+                />
+                <Alert severity="info">
+                  El producto debe tener ruta de procesos y BOM/Componentes para crear la orden.
+                </Alert>
+              </Stack>
+            </form>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseCrearOrden}>Cancelar</Button>
+            <Button variant="contained" type="submit" form="crear-orden-form">
+              Crear orden
+            </Button>
           </DialogActions>
         </Dialog>
       </Stack>
