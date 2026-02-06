@@ -16,12 +16,8 @@ import {
   TableHead,
   TableRow,
   Divider,
-  IconButton,
 } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
-import PlayArrowIcon from '@mui/icons-material/PlayArrow'
-import PauseIcon from '@mui/icons-material/Pause'
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import { API_BASE_URL } from '../config/api'
 
@@ -207,7 +203,31 @@ export default function Produccion() {
       await cargarOrdenes()
       if (created?.id) {
         setSelectedOrdenId(created.id)
-        setDetalleOrden(created)
+        await cargarDetalleOrden(created.id)
+        try {
+          const resProcesos = await fetch(
+            `${API_BASE_URL}/ordenes-produccion/${created.id}/procesos`
+          )
+          if (!resProcesos.ok) throw new Error('Error al obtener procesos de orden')
+          const procesos = await resProcesos.json()
+          const procesosOrdenados = ordenarProcesos(procesos || [])
+          const firstProc = procesosOrdenados[0]
+          if (firstProc?.id) {
+            await handleAccionProceso(firstProc.id, 'iniciar', null, created.id)
+            await handleAccionProceso(
+              firstProc.id,
+              'completar',
+              {
+                cantidad_entrada: cantidadPlaneada,
+                cantidad_salida: 0,
+                parcial: true,
+              },
+              created.id
+            )
+          }
+        } catch (err) {
+          console.error(err)
+        }
       }
     } catch (err) {
       console.error(err)
@@ -219,11 +239,12 @@ export default function Produccion() {
     }
   }
 
-  const handleAccionProceso = async (procesoOrdenId, accion, payload) => {
-    if (!selectedOrdenId || !procesoOrdenId) return
+  const handleAccionProceso = async (procesoOrdenId, accion, payload, ordenIdOverride) => {
+    const ordenId = ordenIdOverride ?? selectedOrdenId
+    if (!ordenId || !procesoOrdenId) return
     try {
       const res = await fetch(
-        `${API_BASE_URL}/ordenes-produccion/${selectedOrdenId}/procesos/${procesoOrdenId}/${accion}`,
+        `${API_BASE_URL}/ordenes-produccion/${ordenId}/procesos/${procesoOrdenId}/${accion}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -245,7 +266,7 @@ export default function Produccion() {
       }
 
       setSnack({ open: true, msg: 'Proceso actualizado', severity: 'success' })
-      await cargarDetalleOrden(selectedOrdenId)
+      await cargarDetalleOrden(ordenId)
       await cargarOrdenes()
     } catch (err) {
       console.error(err)
@@ -257,16 +278,60 @@ export default function Produccion() {
     }
   }
 
-  const buildCompletarPayload = (inputs, parcial) => {
+  const handleActualizarProceso = async (proc) => {
+    if (!selectedOrdenId || !proc?.id) return
+    const inputs = completarInputs[proc.id] || {}
+    const entrada = Number(proc.cantidad_entrada ?? inputs.cantidad_entrada ?? 0)
+    const salidaPrev = Number(proc.cantidad_salida ?? 0)
+    const perdidaPrev = Number(proc.cantidad_perdida ?? 0)
+    const salidaDelta = Number(inputs.cantidad_salida) || 0
+    const perdidaInput =
+      inputs.cantidad_perdida === '' || inputs.cantidad_perdida == null
+        ? null
+        : Number(inputs.cantidad_perdida)
+    const perdidaTotal = Number.isFinite(perdidaInput) ? perdidaInput : perdidaPrev
+    const salidaTotal = salidaPrev + salidaDelta
+
+    if (!Number.isFinite(entrada) || entrada <= 0) {
+      setSnack({ open: true, msg: 'Cantidad de entrada inválida', severity: 'error' })
+      return
+    }
+
+    const objetivo = entrada - (Number.isFinite(perdidaTotal) ? perdidaTotal : 0)
+    const completar = Number.isFinite(objetivo) && salidaTotal >= objetivo
+
+    if (String(proc.estado || '').toUpperCase() === 'PENDIENTE') {
+      await handleAccionProceso(proc.id, 'iniciar')
+    }
+
     const payload = {
-      cantidad_entrada: Number(inputs.cantidad_entrada) || 0,
-      cantidad_salida: Number(inputs.cantidad_salida) || 0,
+      cantidad_entrada: entrada,
+      cantidad_salida: salidaTotal,
+      ...(completar ? { cantidad_perdida: Number(perdidaTotal) || 0 } : { parcial: true }),
     }
-    if (!parcial) {
-      payload.cantidad_perdida = Number(inputs.cantidad_perdida) || 0
+
+    await handleAccionProceso(proc.id, 'completar', payload)
+
+    const procesos = ordenarProcesos(detalleOrden?.procesos || [])
+    const idx = procesos.findIndex((p) => p.id === proc.id)
+    if (idx >= 0 && idx < procesos.length - 1 && salidaTotal > 0) {
+      const nextProc = procesos[idx + 1]
+      if (nextProc?.id && (!nextProc.cantidad_entrada || nextProc.cantidad_entrada === 0)) {
+        if (String(nextProc.estado || '').toUpperCase() === 'PENDIENTE') {
+          await handleAccionProceso(nextProc.id, 'iniciar')
+        }
+        await handleAccionProceso(nextProc.id, 'completar', {
+          cantidad_entrada: salidaTotal,
+          cantidad_salida: 0,
+          parcial: true,
+        })
+      }
     }
-    if (parcial) payload.parcial = true
-    return payload
+
+    setCompletarInputs((prev) => ({
+      ...prev,
+      [proc.id]: { ...prev[proc.id], cantidad_salida: '', cantidad_perdida: '' },
+    }))
   }
 
   return (
@@ -555,16 +620,8 @@ export default function Produccion() {
                               <TextField
                                 size="small"
                                 type="number"
-                                value={inputs.cantidad_entrada}
-                                onChange={(e) =>
-                                  setCompletarInputs((prev) => ({
-                                    ...prev,
-                                    [proc.id]: {
-                                      ...inputs,
-                                      cantidad_entrada: e.target.value,
-                                    },
-                                  }))
-                                }
+                                value={proc.cantidad_entrada ?? ''}
+                                disabled
                                 inputProps={{ min: 0 }}
                               />
                             </TableCell>
@@ -603,42 +660,13 @@ export default function Produccion() {
                               />
                             </TableCell>
                             <TableCell align="right">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleAccionProceso(proc.id, 'iniciar')}
-                              >
-                                <PlayArrowIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleAccionProceso(proc.id, 'pausar')}
-                              >
-                                <PauseIcon fontSize="small" />
-                              </IconButton>
                               <Button
                                 size="small"
-                                onClick={() =>
-                                  handleAccionProceso(
-                                    proc.id,
-                                    'completar',
-                                    buildCompletarPayload(inputs, true)
-                                  )
-                                }
+                                variant="outlined"
+                                onClick={() => handleActualizarProceso(proc)}
                               >
-                                Parcial
+                                Actualizar
                               </Button>
-                              <IconButton
-                                size="small"
-                                onClick={() =>
-                                  handleAccionProceso(
-                                    proc.id,
-                                    'completar',
-                                    buildCompletarPayload(inputs, false)
-                                  )
-                                }
-                              >
-                                <CheckCircleIcon fontSize="small" />
-                              </IconButton>
                             </TableCell>
                           </TableRow>
                         )
