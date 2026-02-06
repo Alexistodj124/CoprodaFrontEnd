@@ -27,7 +27,7 @@ import { API_BASE_URL } from '../config/api'
 
 const TABS = [
   { id: 'finales', label: 'Productos finales' },
-  { id: 'componentes', label: 'Componentes' },
+  { id: 'componentes', label: 'Producto Agranel' },
   { id: 'materias', label: 'Materias primas' },
 ]
 
