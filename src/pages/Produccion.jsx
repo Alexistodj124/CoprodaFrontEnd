@@ -15,6 +15,10 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Divider,
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -58,6 +62,7 @@ export default function Produccion() {
   const [selectedOrdenId, setSelectedOrdenId] = React.useState(null)
   const [detalleOrden, setDetalleOrden] = React.useState(null)
   const [loadingDetalle, setLoadingDetalle] = React.useState(false)
+  const [openDetalle, setOpenDetalle] = React.useState(false)
   const [snack, setSnack] = React.useState({ open: false, msg: '', severity: 'success' })
 
   const [form, setForm] = React.useState({
@@ -171,6 +176,11 @@ export default function Produccion() {
     if (!id) return
     setSelectedOrdenId(id)
     cargarDetalleOrden(id)
+    setOpenDetalle(true)
+  }
+
+  const handleCloseDetalle = () => {
+    setOpenDetalle(false)
   }
 
   const handleEliminarOrden = async (ordenId) => {
@@ -601,16 +611,149 @@ export default function Produccion() {
           </form>
         </Paper>
 
-        <Paper sx={{ p: 3, borderRadius: 3 }}>
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-            sx={{ mb: 2 }}
-          >
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Detalle de orden
-            </Typography>
+        <Dialog open={openDetalle} onClose={handleCloseDetalle} fullWidth maxWidth="lg">
+          <DialogTitle>Detalle de orden</DialogTitle>
+          <DialogContent dividers>
+            {!selectedOrdenId ? (
+              <Typography variant="body2" color="text.secondary">
+                Selecciona una orden para ver sus procesos.
+              </Typography>
+            ) : loadingDetalle ? (
+              <Typography variant="body2" color="text.secondary">
+                Cargando detalle...
+              </Typography>
+            ) : (
+              <>
+                {(() => {
+                  const producto =
+                    detalleOrden?.producto ||
+                    productosById[String(detalleOrden?.producto_id ?? detalleOrden?.productoId ?? '')]
+                  const productoNombre = getProductoNombre({ ...detalleOrden, producto })
+                  return (
+                    <Stack spacing={1} sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2">
+                        Código: {detalleOrden?.codigo ?? '—'}
+                      </Typography>
+                      <Typography variant="subtitle2">
+                        Estado: {detalleOrden?.estado ?? '—'}
+                      </Typography>
+                      <Typography variant="subtitle2">
+                        Producto: {productoNombre}
+                      </Typography>
+                      <Typography variant="subtitle2">
+                        Cantidad planeada: {detalleOrden?.cantidad_planeada ?? '—'}
+                      </Typography>
+                    </Stack>
+                  )
+                })()}
+
+                <Divider sx={{ mb: 2 }} />
+
+                <TableContainer component={Paper} variant="outlined">
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Orden</TableCell>
+                        <TableCell>Proceso</TableCell>
+                        <TableCell>Estado</TableCell>
+                        <TableCell>Cant. entrada</TableCell>
+                        <TableCell>Cant. salida</TableCell>
+                        <TableCell>Cant. perdida</TableCell>
+                        <TableCell align="right">Acciones</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {(detalleOrden?.procesos || []).length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7}>
+                            <Typography variant="body2" color="text.secondary">
+                              No hay procesos para esta orden.
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        detalleOrden?.procesos?.map((proc) => {
+                          const inputs = completarInputs[proc.id] || {
+                            cantidad_entrada: '',
+                            cantidad_salida: '',
+                            cantidad_perdida: '',
+                          }
+                          const procesosOrdenados = ordenarProcesos(detalleOrden?.procesos || [])
+                          const idx = procesosOrdenados.findIndex((p) => p.id === proc.id)
+                          const prevProc = idx > 0 ? procesosOrdenados[idx - 1] : null
+                          const entradaAuto =
+                            Number(proc.cantidad_entrada) ||
+                            (idx === 0
+                              ? Number(detalleOrden?.cantidad_planeada || 0)
+                              : Number(prevProc?.cantidad_salida || 0))
+                          return (
+                            <TableRow key={proc.id}>
+                              <TableCell>{proc.orden ?? '—'}</TableCell>
+                              <TableCell>{getProcesoNombre(proc, procesosById)}</TableCell>
+                              <TableCell>{proc.estado ?? '—'}</TableCell>
+                              <TableCell sx={{ width: 140 }}>
+                                <TextField
+                                  size="small"
+                                  type="number"
+                                  value={Number.isFinite(entradaAuto) && entradaAuto > 0 ? entradaAuto : ''}
+                                  disabled
+                                  inputProps={{ min: 0 }}
+                                />
+                              </TableCell>
+                              <TableCell sx={{ width: 140 }}>
+                                <TextField
+                                  size="small"
+                                  type="number"
+                                  value={inputs.cantidad_salida}
+                                  onChange={(e) =>
+                                    setCompletarInputs((prev) => ({
+                                      ...prev,
+                                      [proc.id]: {
+                                        ...inputs,
+                                        cantidad_salida: e.target.value,
+                                      },
+                                    }))
+                                  }
+                                  inputProps={{ min: 0 }}
+                                />
+                              </TableCell>
+                              <TableCell sx={{ width: 140 }}>
+                                <TextField
+                                  size="small"
+                                  type="number"
+                                  value={inputs.cantidad_perdida}
+                                  onChange={(e) =>
+                                    setCompletarInputs((prev) => ({
+                                      ...prev,
+                                      [proc.id]: {
+                                        ...inputs,
+                                        cantidad_perdida: e.target.value,
+                                      },
+                                    }))
+                                  }
+                                  inputProps={{ min: 0 }}
+                                />
+                              </TableCell>
+                              <TableCell align="right">
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  onClick={() => handleActualizarProceso(proc)}
+                                >
+                                  Actualizar
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </>
+            )}
+          </DialogContent>
+          <DialogActions>
             {selectedOrdenId && (
               <Button
                 size="small"
@@ -621,147 +764,9 @@ export default function Produccion() {
                 Recargar
               </Button>
             )}
-          </Stack>
-
-          {!selectedOrdenId ? (
-            <Typography variant="body2" color="text.secondary">
-              Selecciona una orden para ver sus procesos.
-            </Typography>
-          ) : loadingDetalle ? (
-            <Typography variant="body2" color="text.secondary">
-              Cargando detalle...
-            </Typography>
-          ) : (
-            <>
-              {(() => {
-                const producto =
-                  detalleOrden?.producto ||
-                  productosById[String(detalleOrden?.producto_id ?? detalleOrden?.productoId ?? '')]
-                const productoNombre = getProductoNombre({ ...detalleOrden, producto })
-                return (
-              <Stack spacing={1} sx={{ mb: 2 }}>
-                <Typography variant="subtitle2">
-                  Código: {detalleOrden?.codigo ?? '—'}
-                </Typography>
-                <Typography variant="subtitle2">
-                  Estado: {detalleOrden?.estado ?? '—'}
-                </Typography>
-                <Typography variant="subtitle2">
-                  Producto: {productoNombre}
-                </Typography>
-                <Typography variant="subtitle2">
-                  Cantidad planeada: {detalleOrden?.cantidad_planeada ?? '—'}
-                </Typography>
-              </Stack>
-                )
-              })()}
-
-              <Divider sx={{ mb: 2 }} />
-
-              <TableContainer component={Paper} variant="outlined">
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Orden</TableCell>
-                      <TableCell>Proceso</TableCell>
-                      <TableCell>Estado</TableCell>
-                      <TableCell>Cant. entrada</TableCell>
-                      <TableCell>Cant. salida</TableCell>
-                      <TableCell>Cant. perdida</TableCell>
-                      <TableCell align="right">Acciones</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {(detalleOrden?.procesos || []).length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7}>
-                          <Typography variant="body2" color="text.secondary">
-                            No hay procesos para esta orden.
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      detalleOrden?.procesos?.map((proc) => {
-                        const inputs = completarInputs[proc.id] || {
-                          cantidad_entrada: '',
-                          cantidad_salida: '',
-                          cantidad_perdida: '',
-                        }
-                        const procesosOrdenados = ordenarProcesos(detalleOrden?.procesos || [])
-                        const idx = procesosOrdenados.findIndex((p) => p.id === proc.id)
-                        const prevProc = idx > 0 ? procesosOrdenados[idx - 1] : null
-                        const entradaAuto =
-                          Number(proc.cantidad_entrada) ||
-                          (idx === 0
-                            ? Number(detalleOrden?.cantidad_planeada || 0)
-                            : Number(prevProc?.cantidad_salida || 0))
-                        return (
-                          <TableRow key={proc.id}>
-                            <TableCell>{proc.orden ?? '—'}</TableCell>
-                            <TableCell>{getProcesoNombre(proc, procesosById)}</TableCell>
-                            <TableCell>{proc.estado ?? '—'}</TableCell>
-                            <TableCell sx={{ width: 140 }}>
-                              <TextField
-                                size="small"
-                                type="number"
-                                value={Number.isFinite(entradaAuto) && entradaAuto > 0 ? entradaAuto : ''}
-                                disabled
-                                inputProps={{ min: 0 }}
-                              />
-                            </TableCell>
-                            <TableCell sx={{ width: 140 }}>
-                              <TextField
-                                size="small"
-                                type="number"
-                                value={inputs.cantidad_salida}
-                                onChange={(e) =>
-                                  setCompletarInputs((prev) => ({
-                                    ...prev,
-                                    [proc.id]: {
-                                      ...inputs,
-                                      cantidad_salida: e.target.value,
-                                    },
-                                  }))
-                                }
-                                inputProps={{ min: 0 }}
-                              />
-                            </TableCell>
-                            <TableCell sx={{ width: 140 }}>
-                              <TextField
-                                size="small"
-                                type="number"
-                                value={inputs.cantidad_perdida}
-                                onChange={(e) =>
-                                  setCompletarInputs((prev) => ({
-                                    ...prev,
-                                    [proc.id]: {
-                                      ...inputs,
-                                      cantidad_perdida: e.target.value,
-                                    },
-                                  }))
-                                }
-                                inputProps={{ min: 0 }}
-                              />
-                            </TableCell>
-                            <TableCell align="right">
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                onClick={() => handleActualizarProceso(proc)}
-                              >
-                                Actualizar
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </>
-          )}
-        </Paper>
+            <Button onClick={handleCloseDetalle}>Cerrar</Button>
+          </DialogActions>
+        </Dialog>
       </Stack>
 
       <Snackbar
