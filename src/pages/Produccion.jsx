@@ -40,7 +40,8 @@ const ordenarProcesos = (procesos) =>
     .slice()
     .sort((a, b) => (a?.orden ?? 0) - (b?.orden ?? 0))
 
-const getProcesoNombre = (proceso) =>
+  const getProcesoNombre = (proceso, procesosById) =>
+  procesosById[String(proceso?.proceso_id ?? proceso?.procesoId ?? '')]?.nombre ??
   proceso?.proceso_nombre ??
   proceso?.proceso?.nombre ??
   proceso?.proceso_id ??
@@ -53,6 +54,7 @@ export default function Produccion() {
   const [loadingOrdenes, setLoadingOrdenes] = React.useState(false)
   const [errorOrdenes, setErrorOrdenes] = React.useState('')
   const [productos, setProductos] = React.useState([])
+  const [procesosCatalogo, setProcesosCatalogo] = React.useState([])
   const [selectedOrdenId, setSelectedOrdenId] = React.useState(null)
   const [detalleOrden, setDetalleOrden] = React.useState(null)
   const [loadingDetalle, setLoadingDetalle] = React.useState(false)
@@ -74,6 +76,13 @@ export default function Produccion() {
       return acc
     }, {})
   }, [productos])
+
+  const procesosById = React.useMemo(() => {
+    return procesosCatalogo.reduce((acc, item) => {
+      if (item?.id != null) acc[String(item.id)] = item
+      return acc
+    }, {})
+  }, [procesosCatalogo])
 
   const cargarOrdenes = async () => {
     try {
@@ -119,6 +128,17 @@ export default function Produccion() {
     }
   }
 
+  const cargarProcesosCatalogo = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/procesos`)
+      if (!res.ok) throw new Error('Error al obtener procesos')
+      const data = await res.json()
+      setProcesosCatalogo(data || [])
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   const cargarDetalleOrden = async (id) => {
     if (!id) return
     try {
@@ -143,6 +163,7 @@ export default function Produccion() {
   React.useEffect(() => {
     cargarOrdenes()
     cargarProductos()
+    cargarProcesosCatalogo()
   }, [])
 
   const handleSelectOrden = (orden) => {
@@ -467,7 +488,7 @@ export default function Produccion() {
                               <TableCell />
                               {procesosOrdenados.map((proc) => (
                                 <TableCell key={proc.id} align="center">
-                                  {getProcesoNombre(proc)}
+                                  {getProcesoNombre(proc, procesosById)}
                                 </TableCell>
                               ))}
                             </TableRow>
@@ -677,7 +698,7 @@ export default function Produccion() {
                         return (
                           <TableRow key={proc.id}>
                             <TableCell>{proc.orden ?? '—'}</TableCell>
-                            <TableCell>{proc.proceso_nombre ?? proc.proceso?.nombre ?? proc.proceso_id ?? '—'}</TableCell>
+                            <TableCell>{getProcesoNombre(proc, procesosById)}</TableCell>
                             <TableCell>{proc.estado ?? '—'}</TableCell>
                             <TableCell sx={{ width: 140 }}>
                               <TextField
