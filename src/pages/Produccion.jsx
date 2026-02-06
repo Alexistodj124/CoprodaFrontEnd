@@ -214,16 +214,6 @@ export default function Produccion() {
           const firstProc = procesosOrdenados[0]
           if (firstProc?.id) {
             await handleAccionProceso(firstProc.id, 'iniciar', null, created.id)
-            await handleAccionProceso(
-              firstProc.id,
-              'completar',
-              {
-                cantidad_entrada: cantidadPlaneada,
-                cantidad_salida: 0,
-                parcial: true,
-              },
-              created.id
-            )
           }
         } catch (err) {
           console.error(err)
@@ -281,23 +271,35 @@ export default function Produccion() {
   const handleActualizarProceso = async (proc) => {
     if (!selectedOrdenId || !proc?.id) return
     const inputs = completarInputs[proc.id] || {}
-    const entrada = Number(proc.cantidad_entrada ?? inputs.cantidad_entrada ?? 0)
-    const salidaPrev = Number(proc.cantidad_salida ?? 0)
-    const perdidaPrev = Number(proc.cantidad_perdida ?? 0)
-    const salidaDelta = Number(inputs.cantidad_salida) || 0
+    const procesosOrdenados = ordenarProcesos(detalleOrden?.procesos || [])
+    const idx = procesosOrdenados.findIndex((p) => p.id === proc.id)
+    const prevProc = idx > 0 ? procesosOrdenados[idx - 1] : null
+    const entradaAuto =
+      Number(proc.cantidad_entrada) ||
+      (idx === 0
+        ? Number(detalleOrden?.cantidad_planeada || 0)
+        : Number(prevProc?.cantidad_salida || 0))
+    const salidaInput =
+      inputs.cantidad_salida === '' || inputs.cantidad_salida == null
+        ? null
+        : Number(inputs.cantidad_salida)
     const perdidaInput =
       inputs.cantidad_perdida === '' || inputs.cantidad_perdida == null
         ? null
         : Number(inputs.cantidad_perdida)
-    const perdidaTotal = Number.isFinite(perdidaInput) ? perdidaInput : perdidaPrev
-    const salidaTotal = salidaPrev + salidaDelta
+    const salidaTotal = Number.isFinite(salidaInput)
+      ? salidaInput
+      : Number(proc.cantidad_salida || 0)
+    const perdidaTotal = Number.isFinite(perdidaInput)
+      ? perdidaInput
+      : Number(proc.cantidad_perdida || 0)
 
-    if (!Number.isFinite(entrada) || entrada <= 0) {
+    if (!Number.isFinite(entradaAuto) || entradaAuto <= 0) {
       setSnack({ open: true, msg: 'Cantidad de entrada inválida', severity: 'error' })
       return
     }
 
-    const objetivo = entrada - (Number.isFinite(perdidaTotal) ? perdidaTotal : 0)
+    const objetivo = entradaAuto - (Number.isFinite(perdidaTotal) ? perdidaTotal : 0)
     const completar = Number.isFinite(objetivo) && salidaTotal >= objetivo
 
     if (String(proc.estado || '').toUpperCase() === 'PENDIENTE') {
@@ -305,24 +307,23 @@ export default function Produccion() {
     }
 
     const payload = {
-      cantidad_entrada: entrada,
+      cantidad_entrada: entradaAuto,
       cantidad_salida: salidaTotal,
       ...(completar ? { cantidad_perdida: Number(perdidaTotal) || 0 } : { parcial: true }),
     }
 
     await handleAccionProceso(proc.id, 'completar', payload)
 
-    const procesos = ordenarProcesos(detalleOrden?.procesos || [])
-    const idx = procesos.findIndex((p) => p.id === proc.id)
-    if (idx >= 0 && idx < procesos.length - 1 && salidaTotal > 0) {
-      const nextProc = procesos[idx + 1]
-      if (nextProc?.id && (!nextProc.cantidad_entrada || nextProc.cantidad_entrada === 0)) {
+    if (idx >= 0 && idx < procesosOrdenados.length - 1 && salidaTotal > 0) {
+      const nextProc = procesosOrdenados[idx + 1]
+      const nextEntradaActual = Number(nextProc?.cantidad_entrada || 0)
+      if (nextProc?.id && nextEntradaActual !== salidaTotal) {
         if (String(nextProc.estado || '').toUpperCase() === 'PENDIENTE') {
           await handleAccionProceso(nextProc.id, 'iniciar')
         }
         await handleAccionProceso(nextProc.id, 'completar', {
           cantidad_entrada: salidaTotal,
-          cantidad_salida: 0,
+          cantidad_salida: Number(nextProc?.cantidad_salida || 0),
           parcial: true,
         })
       }
@@ -611,6 +612,14 @@ export default function Produccion() {
                           cantidad_salida: '',
                           cantidad_perdida: '',
                         }
+                        const procesosOrdenados = ordenarProcesos(detalleOrden?.procesos || [])
+                        const idx = procesosOrdenados.findIndex((p) => p.id === proc.id)
+                        const prevProc = idx > 0 ? procesosOrdenados[idx - 1] : null
+                        const entradaAuto =
+                          Number(proc.cantidad_entrada) ||
+                          (idx === 0
+                            ? Number(detalleOrden?.cantidad_planeada || 0)
+                            : Number(prevProc?.cantidad_salida || 0))
                         return (
                           <TableRow key={proc.id}>
                             <TableCell>{proc.orden ?? '—'}</TableCell>
@@ -620,7 +629,7 @@ export default function Produccion() {
                               <TextField
                                 size="small"
                                 type="number"
-                                value={proc.cantidad_entrada ?? ''}
+                                value={Number.isFinite(entradaAuto) && entradaAuto > 0 ? entradaAuto : ''}
                                 disabled
                                 inputProps={{ min: 0 }}
                               />
