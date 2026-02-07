@@ -18,6 +18,7 @@ import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined'
 import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
 import VerifiedOutlinedIcon from '@mui/icons-material/VerifiedOutlined'
+import DesignServicesOutlinedIcon from '@mui/icons-material/DesignServicesOutlined'
 import logoCoproda from '../assets/logocoprodahome2.png'
 
 const heroArt =
@@ -53,31 +54,31 @@ const productArt = (accent, label) =>
 `)
 
 const featuredSets = [
-  { title: 'Vajilla Monja Blanca', pieces: '3 piezas', tone: '#ef4444' },
-  { title: 'Vajilla Orquidea', pieces: '10 piezas', tone: '#f97316' },
-  { title: 'Vajilla Trebol', pieces: '4 piezas', tone: '#f59e0b' },
+  { title: 'Linea de vajillas especializadas', pieces: 'Restaurantes y hoteles', tone: '#ef4444' },
+  { title: 'Utensilios de uso domestico', pieces: 'Cocina diaria', tone: '#f97316' },
+  { title: 'Utensilios de uso profesional', pieces: 'Mayoristas', tone: '#f59e0b' },
 ]
 
-const vajillas = ['Monja Blanca', 'Conicas', 'Orquidea', 'Restaurante']
-const otrosProductos = ['Lecheros', 'Palanganas', 'Arroceras', 'Tinas']
+const productos = ['Sartenes', 'Ollas', 'Tapas', 'Cafeteras', 'Bandejas', 'Accesorios']
+const servicios = ['Diseno personalizado', 'Mejora de rendimiento', 'Adaptacion de piezas', 'Alto volumen']
 
 const highlights = [
   {
-    title: 'Tradicion y confianza',
+    title: 'Excelencia y durabilidad',
     copy:
-      'Coproda S.A. mantiene una trayectoria guatemalteca enfocada en calidad y permanencia.',
+      'Procesos de calidad que garantizan productos confiables y durables para el consumidor.',
     icon: <VerifiedOutlinedIcon />,
   },
   {
-    title: 'Aluminio que dura',
+    title: 'Capacidad de produccion',
     copy:
-      'Productos con larga vida util, resistencia y estilos que combinan lo tradicional con lo moderno.',
+      'Fabricacion de diversidad de disenos en aluminio con alto nivel de calidad.',
     icon: <WarehouseOutlinedIcon />,
   },
   {
-    title: 'Cobertura regional',
+    title: 'Cobertura y soporte',
     copy:
-      'Distribucion y venta mayorista en Guatemala y el mercado centroamericano.',
+      'Apoyo de equipo de diseno y atencion a necesidades especificas del mercado.',
     icon: <LocalShippingOutlinedIcon />,
   },
 ]
@@ -86,6 +87,7 @@ const navItems = [
   { label: 'Inicio', href: '#inicio' },
   { label: 'Empresa', href: '#empresa' },
   { label: 'Productos', href: '#productos' },
+  { label: 'Capacidades', href: '#capacidades' },
   { label: 'Contacto', href: '#contacto' },
 ]
 
@@ -124,7 +126,7 @@ export default function CoprodaLanding() {
             <Stack direction="row" spacing={2} alignItems="center" sx={{ flex: 1 }}>
               <Box component="img" src={logoCoproda} alt="Coproda" sx={{ height: 48 }} />
               <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#ef4444' }}>
-                Productos de aluminio
+                COPRODA, S.A.
               </Typography>
             </Stack>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
@@ -185,13 +187,13 @@ export default function CoprodaLanding() {
             <Grid item xs={12} md={6}>
               <Stack spacing={3}>
                 <Typography variant="overline" sx={{ letterSpacing: '0.4em', color: '#ef4444' }}>
-                  COPRODA S.A.
+                  COMPANIA PROCESADORA DE ALUMINIO
                 </Typography>
                 <Typography variant="h1" sx={{ fontSize: { xs: 40, md: 72 }, lineHeight: 1.02 }}>
                   Aluminio con diseno, durabilidad y presencia.
                 </Typography>
                 <Typography variant="h6" sx={{ color: '#4b5563', maxWidth: 520 }}>
-                  Los mejores productos de aluminio en Guatemala para cocina, hogar y servicio profesional.
+                  Fabricamos utensilios de cocina de aluminio con procesos de calidad para hogares y negocios.
                 </Typography>
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                   <Button
@@ -238,16 +240,16 @@ export default function CoprodaLanding() {
                 <CardContent>
                   <Stack spacing={2}>
                     <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                      Lineas destacadas
+                      Datos clave
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#4b5563' }}>
-                      Cafeteras tradicionales, vajillas completas y accesorios de cocina.
+                      Fundacion: 20 de febrero de 2009. Giro: fabricacion de utensilios de cocina en aluminio.
                     </Typography>
                     <Divider />
                     <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                      <Chip label="Mayoristas" />
-                      <Chip label="Guatemala" />
-                      <Chip label="Centroamerica" />
+                      <Chip label="Excelencia" />
+                      <Chip label="Durabilidad" />
+                      <Chip label="Calidad" />
                     </Stack>
                   </Stack>
                 </CardContent>
@@ -261,10 +263,11 @@ export default function CoprodaLanding() {
         <Container maxWidth="xl">
           <Stack spacing={2} sx={{ mb: 4 }}>
             <Typography variant="h2" sx={{ fontSize: { xs: 32, md: 42 }, color: 'white' }}>
-              Una empresa guatemalteca con proyeccion regional
+              Sobre la empresa
             </Typography>
-            <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.75)', maxWidth: 720 }}>
-              Coproda S.A. combina tradicion, procesos modernos y capacidad de distribucion mayorista.
+            <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.75)', maxWidth: 760 }}>
+              Coproda, S.A. es la Compania Procesadora de Aluminio en Guatemala, dedicada a la fabricacion
+              de utensilios de cocina con procesos de calidad que garantizan productos durables y confiables.
             </Typography>
           </Stack>
           <Grid container spacing={3}>
@@ -304,7 +307,7 @@ export default function CoprodaLanding() {
               CATALOGO
             </Typography>
             <Typography variant="h2" sx={{ fontSize: { xs: 32, md: 44 } }}>
-              Nuestros productos
+              Productos de aluminio
             </Typography>
           </Stack>
           <Grid container spacing={3}>
@@ -342,13 +345,13 @@ export default function CoprodaLanding() {
               <Card sx={{ height: '100%', borderRadius: 4, bgcolor: 'white' }}>
                 <CardContent>
                   <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-                    Vajillas
+                    Utensilios domesticos y profesionales
                   </Typography>
                   <Typography variant="body2" sx={{ color: '#4b5563', mb: 2 }}>
-                    Lineas elegantes para mesa familiar, restaurantes y grandes eventos.
+                    Lineas para cocina diaria y servicio profesional, con variedad de formas y aplicaciones.
                   </Typography>
                   <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                    {vajillas.map((item) => (
+                    {productos.map((item) => (
                       <Chip key={item} label={item} />
                     ))}
                   </Stack>
@@ -359,15 +362,15 @@ export default function CoprodaLanding() {
               <Card sx={{ height: '100%', borderRadius: 4, bgcolor: 'white' }}>
                 <CardContent>
                   <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-                    Otros productos
+                    Vajillas especializadas
                   </Typography>
                   <Typography variant="body2" sx={{ color: '#4b5563', mb: 2 }}>
-                    Complementos esenciales para cocina y servicio: resistencia y gran capacidad.
+                    Linea de vajillas para restaurantes u hoteles con disenos funcionales.
                   </Typography>
                   <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                    {otrosProductos.map((item) => (
-                      <Chip key={item} label={item} />
-                    ))}
+                    <Chip label="Restaurantes" />
+                    <Chip label="Hoteles" />
+                    <Chip label="Eventos" />
                   </Stack>
                 </CardContent>
               </Card>
@@ -376,35 +379,25 @@ export default function CoprodaLanding() {
         </Container>
       </Box>
 
-      <Box id="contacto" sx={{ py: { xs: 6, md: 8 }, bgcolor: '#111827' }}>
+      <Box id="capacidades" sx={{ py: { xs: 6, md: 8 }, bgcolor: '#111827' }}>
         <Container maxWidth="xl">
           <Grid container spacing={4} alignItems="center">
             <Grid item xs={12} md={6}>
               <Typography variant="h2" sx={{ fontSize: { xs: 32, md: 44 }, color: 'white', mb: 2 }}>
-                Contacto directo
+                Capacidades de produccion
               </Typography>
               <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.75)', mb: 3 }}>
-                Visitanos o escribenos para solicitudes de catalogo, precios y distribucion.
+                Capacidad para fabricar diversidad de disenos y atender necesidades especificas del mercado.
               </Typography>
               <Stack spacing={2}>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <PhoneInTalkIcon sx={{ color: '#f59e0b' }} />
-                  <Typography variant="body1" sx={{ color: 'white' }}>
-                    +502 2430-0718
-                  </Typography>
-                </Stack>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <MailOutlineIcon sx={{ color: '#f59e0b' }} />
-                  <Typography variant="body1" sx={{ color: 'white' }}>
-                    info@coproda.com
-                  </Typography>
-                </Stack>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <PlaceOutlinedIcon sx={{ color: '#f59e0b' }} />
-                  <Typography variant="body1" sx={{ color: 'white' }}>
-                    15 Calle 38-65, Zona 8, Guatemala
-                  </Typography>
-                </Stack>
+                {servicios.map((item) => (
+                  <Stack key={item} direction="row" spacing={2} alignItems="center">
+                    <DesignServicesOutlinedIcon sx={{ color: '#f59e0b' }} />
+                    <Typography variant="body1" sx={{ color: 'white' }}>
+                      {item}
+                    </Typography>
+                  </Stack>
+                ))}
               </Stack>
             </Grid>
             <Grid item xs={12} md={6}>
@@ -417,10 +410,77 @@ export default function CoprodaLanding() {
               >
                 <CardContent>
                   <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-                    Listos para surtir tu negocio
+                    Lo que hacemos
                   </Typography>
-                  <Typography variant="body2" sx={{ color: '#4b5563', mb: 3 }}>
-                    Escribenos para recibir catalogos, precios y opciones de distribucion.
+                  <Stack spacing={1.5}>
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <VerifiedOutlinedIcon sx={{ color: '#ef4444' }} />
+                      <Typography variant="body2">
+                        Disenar y fabricar utensilios con variedad de formas y aplicaciones.
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <VerifiedOutlinedIcon sx={{ color: '#ef4444' }} />
+                      <Typography variant="body2">
+                        Procesos de calidad que aseguran durabilidad y rendimiento.
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <VerifiedOutlinedIcon sx={{ color: '#ef4444' }} />
+                      <Typography variant="body2">
+                        Apoyo de diseno para adaptar o desarrollar piezas personalizadas.
+                      </Typography>
+                    </Stack>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </Container>
+      </Box>
+
+      <Box id="contacto" sx={{ py: { xs: 6, md: 8 }, bgcolor: '#f7f6f4' }}>
+        <Container maxWidth="xl">
+          <Grid container spacing={4} alignItems="center">
+            <Grid item xs={12} md={6}>
+              <Typography variant="h2" sx={{ fontSize: { xs: 32, md: 44 }, mb: 2 }}>
+                Contacto
+              </Typography>
+              <Typography variant="body1" sx={{ color: '#4b5563', mb: 3 }}>
+                Visitanos o escribenos para solicitudes de catalogo, precios y distribucion.
+              </Typography>
+              <Stack spacing={2}>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <PhoneInTalkIcon sx={{ color: '#ef4444' }} />
+                  <Typography variant="body1">(502) 2448-9079</Typography>
+                </Stack>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <MailOutlineIcon sx={{ color: '#ef4444' }} />
+                  <Typography variant="body1">info@coproda.com.gt</Typography>
+                </Stack>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <PlaceOutlinedIcon sx={{ color: '#ef4444' }} />
+                  <Typography variant="body1">
+                    4a Avenida 3-19, Zona 1, Boca del Monte, Guatemala
+                  </Typography>
+                </Stack>
+              </Stack>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Card
+                sx={{
+                  borderRadius: 5,
+                  bgcolor: '#111827',
+                  color: 'white',
+                  boxShadow: '0 30px 60px rgba(17,24,39,0.3)',
+                }}
+              >
+                <CardContent>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+                    Listos para tu proyecto
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.75)', mb: 3 }}>
+                    Solicita catalogos, precios y opciones de distribucion con nuestro equipo.
                   </Typography>
                   <Button
                     variant="contained"
@@ -444,9 +504,9 @@ export default function CoprodaLanding() {
         </Container>
       </Box>
 
-      <Box component="footer" sx={{ py: 3, textAlign: 'center', bgcolor: '#0f172a', color: 'white' }}>
+      <Box component="footer" sx={{ py: 3, textAlign: 'center', bgcolor: '#111827', color: 'white' }}>
         <Typography variant="body2" sx={{ opacity: 0.65 }}>
-          Coproda S.A. - Aluminio con historia y vision.
+          Coproda S.A. - Compañia Procesadora de Aluminio.
         </Typography>
       </Box>
     </Box>
