@@ -12,6 +12,7 @@ import Clientes from './pages/Clientes.jsx'
 import Pedidos from './pages/Pedidos.jsx'
 import Ordenes from './pages/Ordenes.jsx'
 import Produccion from './pages/Produccion.jsx'
+import CoprodaLanding from './pages/CoprodaLanding.jsx'
 import Bodega from './pages/Bodega.jsx'
 import Bancos from './pages/Bancos.jsx'
 import Abonos from './pages/Abonos.jsx'
@@ -20,6 +21,10 @@ import { RequireAuth, RequirePermiso } from './ProtectedRoutes.jsx'
 
 const router = createBrowserRouter(
   [
+    {
+      path: 'coproda',
+      element: <CoprodaLanding />,
+    },
     {
       element: <AppLayout />,
       children: [
