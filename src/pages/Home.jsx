@@ -18,7 +18,7 @@ const modules = [
   { to: '/reportes', permiso: 'Reportes', title: 'Reportes', icon: AreaChartIcon, subtitle: 'Reportes de ventas y desempeño' },
   { to: '/compras', permiso: 'Compras', altPermisos: ['Productos'], title: 'Compras', icon: ProductionQuantityLimitsIcon, subtitle: 'Compra y carga de productos' },
   { to: '/pedidos', permiso: 'Pedidos', title: 'Pedidos', icon: AssignmentIcon, subtitle: 'Órdenes generadas y detalle' },
-  { to: '/produccion', permiso: 'Produccion', title: 'Producción', icon: PrecisionManufacturingIcon, subtitle: 'Órdenes de producción y procesos' },
+  { to: '/produccion-dashboard', permiso: 'Produccion', title: 'Producción', icon: PrecisionManufacturingIcon, subtitle: 'Panel de producción y accesos rápidos' },
   { to: '/bodega', permiso: 'Bodega', title: 'Bodega', icon: WarehouseIcon, subtitle: 'Inventario y stock' },
   { to: '/clientes', permiso: 'Clientes', altPermisos: ['ClientesVentas', 'ClientesFinanzas'], title: 'Clientes', icon: PortraitIcon, subtitle: 'Historial y abonos por cliente' },
   { to: '/abonos', permiso: 'Abonos', title: 'Abonos', icon: PaymentsIcon, subtitle: 'Abonos aplicados por cliente' },

@@ -22,6 +22,7 @@ import {
   DialogContent,
   DialogActions,
 } from '@mui/material'
+import { useLocation } from 'react-router-dom'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { API_BASE_URL } from '../config/api'
 
@@ -37,6 +38,7 @@ const toNumber = (value) => {
 }
 
 export default function Stocks() {
+  const location = useLocation()
   const [tab, setTab] = React.useState('finales')
   const [productos, setProductos] = React.useState([])
   const [materiasPrimas, setMateriasPrimas] = React.useState([])
@@ -54,6 +56,14 @@ export default function Stocks() {
     motivo: '',
     observaciones: '',
   })
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const requestedTab = params.get('tab')
+    if (requestedTab && TABS.some((t) => t.id === requestedTab)) {
+      setTab(requestedTab)
+    }
+  }, [location.search])
 
   const cargarProductos = async () => {
     try {

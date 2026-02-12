@@ -379,6 +379,20 @@ export default function NuevaCompra() {
     cargarComponentesProducto(editId)
   }, [location.state])
 
+  React.useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const tipo = params.get('tipo')
+    const editId = location.state?.editProductoId ?? location.state?.producto?.id ?? null
+    if (editId) return
+
+    if (tipo === 'componente') {
+      setProducto((prev) => ({ ...prev, esProductoFinal: false }))
+    }
+    if (tipo === 'producto') {
+      setProducto((prev) => ({ ...prev, esProductoFinal: true }))
+    }
+  }, [location.search, location.state])
+
   const handleImageChange = (e) => {
     const file = e.target.files?.[0]
     if (file) {
