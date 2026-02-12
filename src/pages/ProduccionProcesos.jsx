@@ -10,6 +10,10 @@ import {
   Snackbar,
   Alert,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Table,
   TableBody,
   TableCell,
@@ -21,6 +25,7 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete'
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
+import AddIcon from '@mui/icons-material/Add'
 import { useLocation } from 'react-router-dom'
 import { API_BASE_URL } from '../config/api'
 
@@ -37,6 +42,12 @@ const initialProducto = {
   stock: 0,
 }
 
+const initialComponenteForm = {
+  nombre: '',
+  codigo: '',
+  categoriaId: '',
+}
+
 export default function ProduccionProcesos() {
   const location = useLocation()
   const [productoId, setProductoId] = React.useState('')
@@ -45,6 +56,7 @@ export default function ProduccionProcesos() {
   const [productosDisponibles, setProductosDisponibles] = React.useState([])
   const [procesosDisponibles, setProcesosDisponibles] = React.useState([])
   const [materiasPrimasDisponibles, setMateriasPrimasDisponibles] = React.useState([])
+  const [categoriasProductos, setCategoriasProductos] = React.useState([])
 
   const [procesoSeleccionado, setProcesoSeleccionado] = React.useState('')
   const [procesosRuta, setProcesosRuta] = React.useState([])
@@ -53,11 +65,18 @@ export default function ProduccionProcesos() {
 
   const [loading, setLoading] = React.useState(false)
   const [snack, setSnack] = React.useState({ open: false, msg: '', severity: 'success' })
+  const [openComponenteDialog, setOpenComponenteDialog] = React.useState(false)
+  const [componenteForm, setComponenteForm] = React.useState(initialComponenteForm)
+  const [savingComponente, setSavingComponente] = React.useState(false)
+  const [openNuevaCat, setOpenNuevaCat] = React.useState(false)
+  const [nuevaCatNombre, setNuevaCatNombre] = React.useState('')
+  const [nuevaCatDescripcion, setNuevaCatDescripcion] = React.useState('')
 
   const tipo = React.useMemo(() => {
     const params = new URLSearchParams(location.search)
     return params.get('tipo')
   }, [location.search])
+  const isComponente = tipo === 'componente'
 
   const productosFiltrados = React.useMemo(() => {
     if (tipo === 'producto') return productosDisponibles.filter((p) => p?.es_producto_final)
@@ -115,6 +134,17 @@ export default function ProduccionProcesos() {
       if (!res.ok) throw new Error('Error al obtener materias primas')
       const data = await res.json()
       setMateriasPrimasDisponibles(data || [])
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const cargarCategoriasProductos = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/categorias_producto`)
+      if (!res.ok) throw new Error('Error al obtener categorías de productos')
+      const data = await res.json()
+      setCategoriasProductos(data || [])
     } catch (err) {
       console.error(err)
     }
@@ -203,6 +233,56 @@ export default function ProduccionProcesos() {
     setComponentesItems([])
   }
 
+  const resetComponenteForm = () => {
+    setComponenteForm(initialComponenteForm)
+  }
+
+  const handleOpenNuevaCat = () => {
+    setNuevaCatNombre('')
+    setNuevaCatDescripcion('')
+    setOpenNuevaCat(true)
+  }
+
+  const handleCloseNuevaCat = () => {
+    setOpenNuevaCat(false)
+  }
+
+  const handleGuardarNuevaCat = async () => {
+    const nombre = nuevaCatNombre.trim()
+    const descripcion = nuevaCatDescripcion.trim() || null
+    if (!nombre) return
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/categorias_producto`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, descripcion }),
+      })
+
+      if (!res.ok) {
+        const errText = await res.text()
+        let msg = 'Error creando categoría de producto'
+        try {
+          const parsed = JSON.parse(errText)
+          msg = parsed.error || msg
+        } catch (_) {
+          // noop
+        }
+        setSnack({ open: true, msg, severity: 'error' })
+        return
+      }
+
+      const created = await res.json()
+      await cargarCategoriasProductos()
+      if (created?.id) {
+        setComponenteForm((prev) => ({ ...prev, categoriaId: created.id }))
+      }
+      setOpenNuevaCat(false)
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
   const handleSelectProducto = async (nextId) => {
     setProductoId(nextId)
     if (!nextId) {
@@ -215,6 +295,74 @@ export default function ProduccionProcesos() {
     cargarRutaProcesosProducto(nextId)
     cargarBomProducto(nextId)
     cargarComponentesProducto(nextId)
+  }
+
+  const handleGuardarComponente = async () => {
+    const nombre = componenteForm.nombre.trim()
+    const codigo = componenteForm.codigo.trim()
+    if (!nombre || !codigo || !componenteForm.categoriaId) {
+      setSnack({
+        open: true,
+        msg: 'Nombre, código y categoría son requeridos',
+        severity: 'error',
+      })
+      return
+    }
+
+    setSavingComponente(true)
+    try {
+      const body = {
+        nombre,
+        codigo,
+        categoria_id: Number(componenteForm.categoriaId),
+        precio_cf: 0,
+        precio_minorista: 0,
+        precio_mayorista: 0,
+        foto: null,
+        activo: true,
+        es_producto_final: false,
+        stock: 0,
+      }
+
+      const res = await fetch(`${API_BASE_URL}/productos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+
+      if (!res.ok) {
+        const errText = await res.text()
+        let msg = 'Error al crear componente'
+        try {
+          const parsed = JSON.parse(errText)
+          msg = parsed.error || msg
+        } catch (_) {
+          // noop
+        }
+        setSnack({ open: true, msg, severity: 'error' })
+        return
+      }
+
+      const data = await res.json()
+      const savedId = data?.id
+      await cargarProductosDisponibles()
+      if (savedId != null) {
+        await handleSelectProducto(String(savedId))
+      }
+      setSnack({ open: true, msg: 'Componente creado', severity: 'success' })
+      setOpenComponenteDialog(false)
+      resetComponenteForm()
+    } catch (error) {
+      console.error(error)
+      setSnack({ open: true, msg: 'Error al crear componente', severity: 'error' })
+    } finally {
+      setSavingComponente(false)
+    }
+  }
+
+  const handleCloseComponenteDialog = () => {
+    setOpenComponenteDialog(false)
+    resetComponenteForm()
   }
 
   const handleGuardar = async (event) => {
@@ -321,19 +469,39 @@ export default function ProduccionProcesos() {
     cargarProcesos()
     cargarMateriasPrimas()
     cargarProductosDisponibles()
+    cargarCategoriasProductos()
   }, [])
 
   React.useEffect(() => {
     setProductoId('')
     resetDetalle()
+    setOpenComponenteDialog(false)
+    resetComponenteForm()
   }, [tipo])
 
   return (
     <Box sx={{ maxWidth: 1100, mx: 'auto', mt: 3, px: 2 }}>
       <Paper sx={{ p: 3, borderRadius: 3 }}>
-        <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
-          {tipo === 'componente' ? 'Procesos de componentes' : 'Procesos de productos'}
-        </Typography>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1}
+          alignItems={{ xs: 'stretch', sm: 'center' }}
+          justifyContent="space-between"
+          sx={{ mb: 2 }}
+        >
+          <Typography variant="h5" sx={{ fontWeight: 600 }}>
+            {tipo === 'componente' ? 'Procesos de componentes' : 'Procesos de productos'}
+          </Typography>
+          {isComponente ? (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setOpenComponenteDialog(true)}
+            >
+              Agregar componente
+            </Button>
+          ) : null}
+        </Stack>
 
         <form onSubmit={handleGuardar}>
           <Stack spacing={2}>
@@ -779,6 +947,84 @@ export default function ProduccionProcesos() {
           </Stack>
         </form>
       </Paper>
+
+      <Dialog open={openComponenteDialog} onClose={handleCloseComponenteDialog} fullWidth maxWidth="sm">
+        <DialogTitle>Agregar componente</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label="Nombre del componente"
+              fullWidth
+              value={componenteForm.nombre}
+              onChange={(e) => setComponenteForm((p) => ({ ...p, nombre: e.target.value }))}
+              autoFocus
+              required
+            />
+            <TextField
+              label="Código / SKU"
+              fullWidth
+              value={componenteForm.codigo}
+              onChange={(e) => setComponenteForm((p) => ({ ...p, codigo: e.target.value }))}
+              required
+            />
+            <Box display="flex" gap={1}>
+              <TextField
+                select
+                label="Categoría"
+                fullWidth
+                value={componenteForm.categoriaId}
+                onChange={(e) => setComponenteForm((p) => ({ ...p, categoriaId: e.target.value }))}
+              >
+                {categoriasProductos.map((cat) => (
+                  <MenuItem key={cat.id} value={cat.id}>
+                    {cat.nombre}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <IconButton
+                color="primary"
+                aria-label="Agregar categoría"
+                onClick={handleOpenNuevaCat}
+                sx={{ flexShrink: 0, alignSelf: 'center' }}
+              >
+                <AddIcon />
+              </IconButton>
+            </Box>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseComponenteDialog}>Cancelar</Button>
+          <Button variant="contained" onClick={handleGuardarComponente} disabled={savingComponente}>
+            Guardar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openNuevaCat} onClose={handleCloseNuevaCat} fullWidth maxWidth="sm">
+        <DialogTitle>Nueva categoría de producto</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+          <TextField
+            label="Nombre de la categoría"
+            value={nuevaCatNombre}
+            onChange={(e) => setNuevaCatNombre(e.target.value)}
+            autoFocus
+            required
+          />
+          <TextField
+            label="Descripción (opcional)"
+            value={nuevaCatDescripcion}
+            onChange={(e) => setNuevaCatDescripcion(e.target.value)}
+            multiline
+            minRows={2}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseNuevaCat}>Cancelar</Button>
+          <Button variant="contained" onClick={handleGuardarNuevaCat}>
+            Guardar
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar
         open={snack.open}
