@@ -7,6 +7,8 @@ import {
   Button,
   TextField,
   MenuItem,
+  ToggleButton,
+  ToggleButtonGroup,
   Table,
   TableBody,
   TableCell,
@@ -19,6 +21,7 @@ import {
   DialogContent,
   DialogActions,
   Divider,
+  Chip,
 } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
@@ -83,6 +86,7 @@ export default function ReportesProduccion() {
   const [fechaHasta, setFechaHasta] = React.useState('')
   const [procesosCatalogo, setProcesosCatalogo] = React.useState([])
   const [productos, setProductos] = React.useState([])
+  const [vista, setVista] = React.useState('compacta')
 
   const cargarOrdenes = async () => {
     try {
@@ -265,77 +269,154 @@ export default function ReportesProduccion() {
                 onChange={(e) => setFechaHasta(e.target.value)}
                 InputLabelProps={{ shrink: true }}
               />
+              <ToggleButtonGroup
+                value={vista}
+                exclusive
+                size="small"
+                onChange={(_, next) => next && setVista(next)}
+                sx={{ ml: 'auto' }}
+              >
+                <ToggleButton value="compacta">Compacta</ToggleButton>
+                <ToggleButton value="tabla">Tabla</ToggleButton>
+              </ToggleButtonGroup>
             </Stack>
             {error && <Alert severity="error">{error}</Alert>}
-            <TableContainer component={Paper} variant="outlined">
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ backgroundColor: 'grey.200', fontWeight: 600 }}>
-                      Producto
-                    </TableCell>
-                    <TableCell sx={{ backgroundColor: 'grey.200', fontWeight: 600 }}>
-                      Estado
-                    </TableCell>
-                    {procesosColumns.map((col) => (
-                      <TableCell
-                        key={col.key}
-                        align="center"
-                        sx={{ color: 'text.secondary', fontWeight: 600 }}
-                      >
-                        {col.nombre}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filtered.length === 0 ? (
+            {vista === 'tabla' ? (
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
                     <TableRow>
-                      <TableCell colSpan={2 + procesosColumns.length}>
-                        <Typography variant="body2" color="text.secondary">
-                          No hay órdenes en producción.
-                        </Typography>
+                      <TableCell sx={{ backgroundColor: 'grey.200', fontWeight: 600 }}>
+                        Producto
                       </TableCell>
-                    </TableRow>
-                  ) : (
-                    filtered.map((orden) => {
-                      const procesosOrdenados = ordenarProcesos(orden?.procesos || [])
-                      return (
-                        <TableRow
-                          key={orden?.id ?? orden?.codigo}
-                          hover
-                          sx={{ cursor: 'pointer' }}
-                          onClick={() => handleOpenDetalle(orden)}
+                      <TableCell sx={{ backgroundColor: 'grey.200', fontWeight: 600 }}>
+                        Estado
+                      </TableCell>
+                      {procesosColumns.map((col) => (
+                        <TableCell
+                          key={col.key}
+                          align="center"
+                          sx={{ color: 'text.secondary', fontWeight: 600 }}
                         >
-                          <TableCell sx={{ backgroundColor: 'grey.200' }}>
-                            {getProductoNombre(orden, productosById)}
-                          </TableCell>
-                          <TableCell sx={{ backgroundColor: 'grey.200' }}>
-                            {renderEstadoIcon(orden?.estado)}
-                          </TableCell>
-                          {procesosColumns.map((col) => {
-                            const proc = procesosOrdenados.find(
-                              (p) =>
-                                String(
-                                  p?.proceso_id ??
-                                    p?.procesoId ??
-                                    p?.id ??
-                                    getProcesoNombre(p, procesosById)
-                                ) === col.key
-                            )
-                            return (
-                              <TableCell key={col.key} align="center">
-                                {renderEstadoIcon(proc?.estado)}
-                              </TableCell>
-                            )
-                          })}
-                        </TableRow>
-                      )
-                    })
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                          {col.nombre}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filtered.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={2 + procesosColumns.length}>
+                          <Typography variant="body2" color="text.secondary">
+                            No hay órdenes para mostrar.
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filtered.map((orden) => {
+                        const procesosOrdenados = ordenarProcesos(orden?.procesos || [])
+                        return (
+                          <TableRow
+                            key={orden?.id ?? orden?.codigo}
+                            hover
+                            sx={{ cursor: 'pointer' }}
+                            onClick={() => handleOpenDetalle(orden)}
+                          >
+                            <TableCell sx={{ backgroundColor: 'grey.200' }}>
+                              {getProductoNombre(orden, productosById)}
+                            </TableCell>
+                            <TableCell sx={{ backgroundColor: 'grey.200' }}>
+                              {renderEstadoIcon(orden?.estado)}
+                            </TableCell>
+                            {procesosColumns.map((col) => {
+                              const proc = procesosOrdenados.find(
+                                (p) =>
+                                  String(
+                                    p?.proceso_id ??
+                                      p?.procesoId ??
+                                      p?.id ??
+                                      getProcesoNombre(p, procesosById)
+                                  ) === col.key
+                              )
+                              return (
+                                <TableCell key={col.key} align="center">
+                                  {renderEstadoIcon(proc?.estado)}
+                                </TableCell>
+                              )
+                            })}
+                          </TableRow>
+                        )
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ backgroundColor: 'grey.200', fontWeight: 600 }}>
+                        Producto
+                      </TableCell>
+                      <TableCell sx={{ backgroundColor: 'grey.200', fontWeight: 600 }}>
+                        Estado
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Procesos</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filtered.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3}>
+                          <Typography variant="body2" color="text.secondary">
+                            No hay órdenes para mostrar.
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filtered.map((orden) => {
+                        const procesosOrdenados = ordenarProcesos(orden?.procesos || [])
+                        return (
+                          <TableRow
+                            key={orden?.id ?? orden?.codigo}
+                            hover
+                            sx={{ cursor: 'pointer' }}
+                            onClick={() => handleOpenDetalle(orden)}
+                          >
+                            <TableCell sx={{ backgroundColor: 'grey.200' }}>
+                              {getProductoNombre(orden, productosById)}
+                            </TableCell>
+                            <TableCell sx={{ backgroundColor: 'grey.200' }}>
+                              {renderEstadoIcon(orden?.estado)}
+                            </TableCell>
+                            <TableCell>
+                              <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                                {procesosOrdenados.length === 0 ? (
+                                  <Typography variant="body2" color="text.secondary">
+                                    Sin procesos
+                                  </Typography>
+                                ) : (
+                                  procesosOrdenados.map((proc) => (
+                                    <Chip
+                                      key={proc.id}
+                                      size="small"
+                                      icon={renderEstadoIcon(proc?.estado)}
+                                      label={getProcesoNombre(proc, procesosById)}
+                                      variant="outlined"
+                                    />
+                                  ))
+                                )}
+                              </Stack>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
           </Stack>
         </Paper>
       </Stack>
