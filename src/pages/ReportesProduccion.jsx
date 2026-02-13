@@ -21,6 +21,9 @@ import {
   Divider,
 } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import ScheduleIcon from '@mui/icons-material/Schedule'
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'
 import { API_BASE_URL } from '../config/api'
 
 const getProductoNombre = (orden, productosById) =>
@@ -54,6 +57,20 @@ const getProcesoNombre = (proceso, procesosById) =>
   proceso?.proceso?.nombre ??
   proceso?.proceso_id ??
   '—'
+
+const renderEstadoIcon = (estadoRaw) => {
+  const estado = String(estadoRaw ?? '').toUpperCase()
+  if (estado === 'COMPLETADO' || estado === 'COMPLETADA') {
+    return <CheckCircleIcon fontSize="small" sx={{ color: 'success.main' }} />
+  }
+  if (estado === 'EN_PROCESO') {
+    return <ScheduleIcon fontSize="small" sx={{ color: 'warning.main' }} />
+  }
+  if (estado === 'PENDIENTE') {
+    return <HourglassEmptyIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+  }
+  return '—'
+}
 
 export default function ReportesProduccion() {
   const [ordenes, setOrdenes] = React.useState([])
@@ -283,7 +300,7 @@ export default function ReportesProduccion() {
                           onClick={() => handleOpenDetalle(orden)}
                         >
                           <TableCell>{getProductoNombre(orden, productosById)}</TableCell>
-                          <TableCell>{orden?.estado ?? '—'}</TableCell>
+                          <TableCell>{renderEstadoIcon(orden?.estado)}</TableCell>
                           {procesosColumns.map((col) => {
                             const proc = procesosOrdenados.find(
                               (p) =>
@@ -296,7 +313,7 @@ export default function ReportesProduccion() {
                             )
                             return (
                               <TableCell key={col.key} align="center">
-                                {proc?.estado ?? '—'}
+                                {renderEstadoIcon(proc?.estado)}
                               </TableCell>
                             )
                           })}
