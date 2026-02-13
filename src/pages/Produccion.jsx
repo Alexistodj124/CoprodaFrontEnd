@@ -369,10 +369,10 @@ export default function Produccion() {
         ? null
         : Number(inputs.cantidad_perdida)
     const salidaTotal = Number.isFinite(salidaInput)
-      ? salidaInput
+      ? Number(proc.cantidad_salida || 0) + salidaInput
       : Number(proc.cantidad_salida || 0)
     const perdidaTotal = Number.isFinite(perdidaInput)
-      ? perdidaInput
+      ? Number(proc.cantidad_perdida || 0) + perdidaInput
       : Number(proc.cantidad_perdida || 0)
 
     if (!Number.isFinite(entradaAuto) || entradaAuto <= 0) {
@@ -390,20 +390,23 @@ export default function Produccion() {
     const payload = {
       cantidad_entrada: entradaAuto,
       cantidad_salida: salidaTotal,
-      ...(completar ? { cantidad_perdida: Number(perdidaTotal) || 0 } : { parcial: true }),
+      ...(Number.isFinite(perdidaInput) ? { cantidad_perdida: Number(perdidaTotal) || 0 } : {}),
+      ...(completar ? {} : { parcial: true }),
     }
 
     await handleAccionProceso(proc.id, 'completar', payload)
 
     if (idx >= 0 && idx < procesosOrdenados.length - 1 && salidaTotal > 0) {
       const nextProc = procesosOrdenados[idx + 1]
-      const nextEntradaActual = Number(nextProc?.cantidad_entrada || 0)
-      if (nextProc?.id && nextEntradaActual !== salidaTotal) {
+      if (nextProc?.id) {
+        const nextEntradaActual = Number(nextProc?.cantidad_entrada || 0)
+        const deltaSalida = Number.isFinite(salidaInput) ? salidaInput : 0
+        const nuevaEntrada = nextEntradaActual + deltaSalida
         if (String(nextProc.estado || '').toUpperCase() === 'PENDIENTE') {
           await handleAccionProceso(nextProc.id, 'iniciar')
         }
         await handleAccionProceso(nextProc.id, 'completar', {
-          cantidad_entrada: salidaTotal,
+          cantidad_entrada: nuevaEntrada,
           cantidad_salida: Number(nextProc?.cantidad_salida || 0),
           parcial: true,
         })
