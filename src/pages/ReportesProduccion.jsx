@@ -5,6 +5,8 @@ import {
   Typography,
   Stack,
   Button,
+  TextField,
+  MenuItem,
   Table,
   TableBody,
   TableCell,
@@ -21,8 +23,9 @@ import {
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { API_BASE_URL } from '../config/api'
 
-const getProductoNombre = (orden) =>
+const getProductoNombre = (orden, productosById) =>
   orden?.producto?.nombre ??
+  productosById[String(orden?.producto_id ?? orden?.productoId ?? '')]?.nombre ??
   orden?.producto_nombre ??
   orden?.productoNombre ??
   '—'
@@ -33,12 +36,20 @@ const getCantidadPlaneada = (orden) =>
   orden?.cantidad ??
   '—'
 
+const getOrdenFecha = (orden) =>
+  orden?.fecha_inicio ??
+  orden?.fecha_creacion ??
+  orden?.created_at ??
+  orden?.fecha ??
+  null
+
 const ordenarProcesos = (procesos) =>
   procesos
     .slice()
     .sort((a, b) => (a?.orden ?? 0) - (b?.orden ?? 0))
 
-const getProcesoNombre = (proceso) =>
+const getProcesoNombre = (proceso, procesosById) =>
+  procesosById[String(proceso?.proceso_id ?? proceso?.procesoId ?? '')]?.nombre ??
   proceso?.proceso_nombre ??
   proceso?.proceso?.nombre ??
   proceso?.proceso_id ??
@@ -50,6 +61,11 @@ export default function ReportesProduccion() {
   const [error, setError] = React.useState('')
   const [openDetalle, setOpenDetalle] = React.useState(false)
   const [detalleOrden, setDetalleOrden] = React.useState(null)
+  const [estadoFiltro, setEstadoFiltro] = React.useState('')
+  const [fechaDesde, setFechaDesde] = React.useState('')
+  const [fechaHasta, setFechaHasta] = React.useState('')
+  const [procesosCatalogo, setProcesosCatalogo] = React.useState([])
+  const [productos, setProductos] = React.useState([])
 
   const cargarOrdenes = async () => {
     try {
@@ -84,26 +100,89 @@ export default function ReportesProduccion() {
     }
   }
 
+  const cargarProcesosCatalogo = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/procesos`)
+      if (!res.ok) throw new Error('Error al obtener procesos')
+      const data = await res.json()
+      setProcesosCatalogo(data || [])
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const cargarProductos = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/productos`)
+      if (!res.ok) throw new Error('Error al obtener productos')
+      const data = await res.json()
+      setProductos(data || [])
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   React.useEffect(() => {
     cargarOrdenes()
+    cargarProcesosCatalogo()
+    cargarProductos()
   }, [])
+
+  const estadosDisponibles = React.useMemo(() => {
+    const set = new Set(
+      ordenes
+        .map((o) => String(o?.estado ?? '').trim())
+        .filter(Boolean)
+    )
+    return Array.from(set)
+  }, [ordenes])
+
+  const procesosById = React.useMemo(() => {
+    return (procesosCatalogo || []).reduce((acc, item) => {
+      if (item?.id != null) acc[String(item.id)] = item
+      return acc
+    }, {})
+  }, [procesosCatalogo])
+
+  const productosById = React.useMemo(() => {
+    return (productos || []).reduce((acc, item) => {
+      if (item?.id != null) acc[String(item.id)] = item
+      return acc
+    }, {})
+  }, [productos])
 
   const filtered = React.useMemo(() => {
     return ordenes.filter((orden) => {
-      const estado = String(orden?.estado ?? '').toUpperCase()
-      return estado !== 'COMPLETADA' && estado !== 'CANCELADA'
+      if (estadoFiltro && String(orden?.estado ?? '') !== estadoFiltro) return false
+
+      const rawFecha = getOrdenFecha(orden)
+      const fecha = rawFecha ? new Date(rawFecha) : null
+      if (fechaDesde) {
+        if (!fecha) return false
+        const desde = new Date(`${fechaDesde}T00:00:00`)
+        if (fecha < desde) return false
+      }
+      if (fechaHasta) {
+        if (!fecha) return false
+        const hasta = new Date(`${fechaHasta}T23:59:59`)
+        if (fecha > hasta) return false
+      }
+
+      return true
     })
-  }, [ordenes])
+  }, [ordenes, estadoFiltro, fechaDesde, fechaHasta])
 
   const procesosColumns = React.useMemo(() => {
     const map = new Map()
     filtered.forEach((orden) => {
       ordenarProcesos(orden?.procesos || []).forEach((proc) => {
-        const key = String(proc?.proceso_id ?? proc?.id ?? getProcesoNombre(proc))
+        const key = String(
+          proc?.proceso_id ?? proc?.procesoId ?? proc?.id ?? getProcesoNombre(proc, procesosById)
+        )
         if (!map.has(key)) {
           map.set(key, {
             key,
-            nombre: getProcesoNombre(proc),
+            nombre: getProcesoNombre(proc, procesosById),
             orden: proc?.orden ?? 0,
           })
         }
@@ -140,6 +219,36 @@ export default function ReportesProduccion() {
 
         <Paper sx={{ p: 3, borderRadius: 3 }}>
           <Stack spacing={2}>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+              <TextField
+                select
+                label="Estado"
+                value={estadoFiltro}
+                onChange={(e) => setEstadoFiltro(e.target.value)}
+                sx={{ minWidth: 200 }}
+              >
+                <MenuItem value="">Todos</MenuItem>
+                {estadosDisponibles.map((estado) => (
+                  <MenuItem key={estado} value={estado}>
+                    {estado}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                label="Desde"
+                type="date"
+                value={fechaDesde}
+                onChange={(e) => setFechaDesde(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="Hasta"
+                type="date"
+                value={fechaHasta}
+                onChange={(e) => setFechaHasta(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Stack>
             {error && <Alert severity="error">{error}</Alert>}
             <TableContainer component={Paper} variant="outlined">
               <Table size="small">
@@ -173,12 +282,17 @@ export default function ReportesProduccion() {
                           sx={{ cursor: 'pointer' }}
                           onClick={() => handleOpenDetalle(orden)}
                         >
-                          <TableCell>{getProductoNombre(orden)}</TableCell>
+                          <TableCell>{getProductoNombre(orden, productosById)}</TableCell>
                           <TableCell>{orden?.estado ?? '—'}</TableCell>
                           {procesosColumns.map((col) => {
                             const proc = procesosOrdenados.find(
                               (p) =>
-                                String(p?.proceso_id ?? p?.id ?? getProcesoNombre(p)) === col.key
+                                String(
+                                  p?.proceso_id ??
+                                    p?.procesoId ??
+                                    p?.id ??
+                                    getProcesoNombre(p, procesosById)
+                                ) === col.key
                             )
                             return (
                               <TableCell key={col.key} align="center">
@@ -208,7 +322,7 @@ export default function ReportesProduccion() {
             <>
               <Stack spacing={1} sx={{ mb: 2 }}>
                 <Typography variant="subtitle2">
-                  Producto: {getProductoNombre(detalleOrden)}
+                  Producto: {getProductoNombre(detalleOrden, productosById)}
                 </Typography>
                 <Typography variant="subtitle2">
                   Estado: {detalleOrden?.estado ?? '—'}
@@ -245,7 +359,7 @@ export default function ReportesProduccion() {
                       ordenarProcesos(detalleOrden?.procesos || []).map((proc) => (
                         <TableRow key={proc.id}>
                           <TableCell>{proc.orden ?? '—'}</TableCell>
-                          <TableCell>{getProcesoNombre(proc)}</TableCell>
+                          <TableCell>{getProcesoNombre(proc, procesosById)}</TableCell>
                           <TableCell>{proc.estado ?? '—'}</TableCell>
                           <TableCell align="right">
                             {proc.cantidad_entrada ?? '—'}
