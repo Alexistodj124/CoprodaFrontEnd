@@ -14,6 +14,7 @@ import Ordenes from './pages/Ordenes.jsx'
 import Produccion from './pages/Produccion.jsx'
 import ProduccionDashboard from './pages/ProduccionDashboard.jsx'
 import ProduccionProcesos from './pages/ProduccionProcesos.jsx'
+import ReportesProduccion from './pages/ReportesProduccion.jsx'
 import CoprodaLanding from './pages/CoprodaLanding.jsx'
 import Bodega from './pages/Bodega.jsx'
 import Bancos from './pages/Bancos.jsx'
@@ -92,6 +93,14 @@ const router = createBrowserRouter(
           element: (
             <RequirePermiso permiso="Produccion">
               <ProduccionDashboard />
+            </RequirePermiso>
+          ),
+        },
+        {
+          path: 'reportes-produccion',
+          element: (
+            <RequirePermiso permiso="Produccion">
+              <ReportesProduccion />
             </RequirePermiso>
           ),
         },

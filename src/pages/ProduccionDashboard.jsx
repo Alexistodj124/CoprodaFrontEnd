@@ -6,6 +6,7 @@ import AddBoxIcon from '@mui/icons-material/AddBox'
 import ExtensionIcon from '@mui/icons-material/Extension'
 import Inventory2Icon from '@mui/icons-material/Inventory2'
 import ScienceIcon from '@mui/icons-material/Science'
+import AssessmentIcon from '@mui/icons-material/Assessment'
 import ModuleCard from '../components/ModuleCard'
 import { useAuth } from '../context/AuthContext'
 
@@ -40,6 +41,13 @@ const modules = [
     title: 'Agregar Componente',
     icon: ExtensionIcon,
     subtitle: 'Asignar procesos a componentes',
+  },
+  {
+    to: '/reportes-produccion',
+    permiso: 'Produccion',
+    title: 'Reportes Producción',
+    icon: AssessmentIcon,
+    subtitle: 'Resumen de órdenes y procesos',
   },
   {
     to: '/stocks?tab=materias',
