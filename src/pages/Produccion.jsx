@@ -567,11 +567,21 @@ export default function Produccion() {
                             </TableRow>
                             <TableRow>
                               <TableCell>Cant. entrada</TableCell>
-                              {procesosOrdenados.map((proc) => (
-                                <TableCell key={proc.id} align="center">
-                                  {proc.cantidad_entrada ?? '—'}
-                                </TableCell>
-                              ))}
+                              {procesosOrdenados.map((proc, idx) => {
+                                const prevProc = idx > 0 ? procesosOrdenados[idx - 1] : null
+                                const entradaAuto =
+                                  Number(proc.cantidad_entrada) ||
+                                  (idx === 0
+                                    ? Number(orden?.cantidad_planeada || 0)
+                                    : Number(prevProc?.cantidad_salida || 0))
+                                return (
+                                  <TableCell key={proc.id} align="center">
+                                    {Number.isFinite(entradaAuto) && entradaAuto > 0
+                                      ? entradaAuto
+                                      : '—'}
+                                  </TableCell>
+                                )
+                              })}
                             </TableRow>
                             <TableRow>
                               <TableCell>Cant. salida</TableCell>
