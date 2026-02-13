@@ -271,10 +271,18 @@ export default function ReportesProduccion() {
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell>Producto</TableCell>
-                    <TableCell>Estado</TableCell>
+                    <TableCell sx={{ backgroundColor: 'grey.200', fontWeight: 600 }}>
+                      Producto
+                    </TableCell>
+                    <TableCell sx={{ backgroundColor: 'grey.200', fontWeight: 600 }}>
+                      Estado
+                    </TableCell>
                     {procesosColumns.map((col) => (
-                      <TableCell key={col.key} align="center">
+                      <TableCell
+                        key={col.key}
+                        align="center"
+                        sx={{ color: 'text.secondary', fontWeight: 600 }}
+                      >
                         {col.nombre}
                       </TableCell>
                     ))}
@@ -299,8 +307,12 @@ export default function ReportesProduccion() {
                           sx={{ cursor: 'pointer' }}
                           onClick={() => handleOpenDetalle(orden)}
                         >
-                          <TableCell>{getProductoNombre(orden, productosById)}</TableCell>
-                          <TableCell>{renderEstadoIcon(orden?.estado)}</TableCell>
+                          <TableCell sx={{ backgroundColor: 'grey.200' }}>
+                            {getProductoNombre(orden, productosById)}
+                          </TableCell>
+                          <TableCell sx={{ backgroundColor: 'grey.200' }}>
+                            {renderEstadoIcon(orden?.estado)}
+                          </TableCell>
                           {procesosColumns.map((col) => {
                             const proc = procesosOrdenados.find(
                               (p) =>
