@@ -382,6 +382,18 @@ export default function Produccion() {
 
     const objetivo = entradaAuto - (Number.isFinite(perdidaTotal) ? perdidaTotal : 0)
     let completar = Number.isFinite(objetivo) && salidaTotal >= objetivo
+
+    if (Number.isFinite(salidaInput) || Number.isFinite(perdidaInput)) {
+      const totalMovido = salidaTotal + (Number.isFinite(perdidaTotal) ? perdidaTotal : 0)
+      if (totalMovido > entradaAuto) {
+        setSnack({
+          open: true,
+          msg: 'No se puede: salida + pérdida supera la entrada',
+          severity: 'error',
+        })
+        return
+      }
+    }
     if (
       completar &&
       prevProc &&
