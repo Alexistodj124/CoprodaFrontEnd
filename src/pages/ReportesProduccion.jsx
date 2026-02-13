@@ -4,9 +4,7 @@ import {
   Paper,
   Typography,
   Stack,
-  TextField,
   Button,
-  MenuItem,
   Table,
   TableBody,
   TableCell,
@@ -14,7 +12,11 @@ import {
   TableHead,
   TableRow,
   Alert,
-  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Divider,
 } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { API_BASE_URL } from '../config/api'
@@ -31,19 +33,23 @@ const getCantidadPlaneada = (orden) =>
   orden?.cantidad ??
   '—'
 
-const sumProcesos = (procesos, field) =>
-  (procesos || []).reduce((acc, item) => {
-    const value = Number(item?.[field])
-    return acc + (Number.isFinite(value) ? value : 0)
-  }, 0)
+const ordenarProcesos = (procesos) =>
+  procesos
+    .slice()
+    .sort((a, b) => (a?.orden ?? 0) - (b?.orden ?? 0))
+
+const getProcesoNombre = (proceso) =>
+  proceso?.proceso_nombre ??
+  proceso?.proceso?.nombre ??
+  proceso?.proceso_id ??
+  '—'
 
 export default function ReportesProduccion() {
   const [ordenes, setOrdenes] = React.useState([])
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState('')
-  const [query, setQuery] = React.useState('')
-  const [estadoFiltro, setEstadoFiltro] = React.useState('')
-  const [prioridadFiltro, setPrioridadFiltro] = React.useState('')
+  const [openDetalle, setOpenDetalle] = React.useState(false)
+  const [detalleOrden, setDetalleOrden] = React.useState(null)
 
   const cargarOrdenes = async () => {
     try {
@@ -82,45 +88,38 @@ export default function ReportesProduccion() {
     cargarOrdenes()
   }, [])
 
-  const estadosDisponibles = React.useMemo(() => {
-    const set = new Set(
-      ordenes
-        .map((o) => String(o?.estado ?? '').trim())
-        .filter(Boolean)
-    )
-    return Array.from(set)
-  }, [ordenes])
-
-  const prioridadesDisponibles = React.useMemo(() => {
-    const set = new Set(
-      ordenes
-        .map((o) => String(o?.prioridad ?? '').trim())
-        .filter(Boolean)
-    )
-    return Array.from(set)
-  }, [ordenes])
-
   const filtered = React.useMemo(() => {
-    const q = query.trim().toLowerCase()
     return ordenes.filter((orden) => {
-      if (estadoFiltro && String(orden?.estado ?? '') !== estadoFiltro) return false
-      if (prioridadFiltro && String(orden?.prioridad ?? '') !== prioridadFiltro) return false
-      if (!q) return true
-      const codigo = String(orden?.codigo ?? '').toLowerCase()
-      const producto = getProductoNombre(orden).toLowerCase()
-      return codigo.includes(q) || producto.includes(q)
+      const estado = String(orden?.estado ?? '').toUpperCase()
+      return estado !== 'COMPLETADA' && estado !== 'CANCELADA'
     })
-  }, [ordenes, estadoFiltro, prioridadFiltro, query])
+  }, [ordenes])
 
-  const resumen = React.useMemo(() => {
-    const total = filtered.length
-    const byEstado = filtered.reduce((acc, orden) => {
-      const estado = String(orden?.estado ?? '—')
-      acc[estado] = (acc[estado] || 0) + 1
-      return acc
-    }, {})
-    return { total, byEstado }
+  const procesosColumns = React.useMemo(() => {
+    const map = new Map()
+    filtered.forEach((orden) => {
+      ordenarProcesos(orden?.procesos || []).forEach((proc) => {
+        const key = String(proc?.proceso_id ?? proc?.id ?? getProcesoNombre(proc))
+        if (!map.has(key)) {
+          map.set(key, {
+            key,
+            nombre: getProcesoNombre(proc),
+            orden: proc?.orden ?? 0,
+          })
+        }
+      })
+    })
+    return Array.from(map.values()).sort((a, b) => a.orden - b.orden)
   }, [filtered])
+
+  const handleOpenDetalle = (orden) => {
+    setDetalleOrden(orden)
+    setOpenDetalle(true)
+  }
+
+  const handleCloseDetalle = () => {
+    setOpenDetalle(false)
+  }
 
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', mt: 3, px: 2 }}>
@@ -141,91 +140,52 @@ export default function ReportesProduccion() {
 
         <Paper sx={{ p: 3, borderRadius: 3 }}>
           <Stack spacing={2}>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-              <TextField
-                label="Buscar por código o producto"
-                fullWidth
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-              <TextField
-                select
-                label="Estado"
-                value={estadoFiltro}
-                onChange={(e) => setEstadoFiltro(e.target.value)}
-                sx={{ minWidth: 200 }}
-              >
-                <MenuItem value="">Todos</MenuItem>
-                {estadosDisponibles.map((estado) => (
-                  <MenuItem key={estado} value={estado}>
-                    {estado}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <TextField
-                select
-                label="Prioridad"
-                value={prioridadFiltro}
-                onChange={(e) => setPrioridadFiltro(e.target.value)}
-                sx={{ minWidth: 200 }}
-              >
-                <MenuItem value="">Todas</MenuItem>
-                {prioridadesDisponibles.map((prioridad) => (
-                  <MenuItem key={prioridad} value={prioridad}>
-                    {prioridad}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Stack>
-
             {error && <Alert severity="error">{error}</Alert>}
-
-            <Stack direction="row" spacing={1} flexWrap="wrap">
-              <Chip label={`Total: ${resumen.total}`} />
-              {Object.entries(resumen.byEstado).map(([estado, count]) => (
-                <Chip key={estado} label={`${estado}: ${count}`} variant="outlined" />
-              ))}
-            </Stack>
-
             <TableContainer component={Paper} variant="outlined">
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell>Código</TableCell>
                     <TableCell>Producto</TableCell>
-                    <TableCell>Cant. planeada</TableCell>
-                    <TableCell>Prioridad</TableCell>
                     <TableCell>Estado</TableCell>
-                    <TableCell align="right">Entrada</TableCell>
-                    <TableCell align="right">Salida</TableCell>
-                    <TableCell align="right">Pérdida</TableCell>
+                    {procesosColumns.map((col) => (
+                      <TableCell key={col.key} align="center">
+                        {col.nombre}
+                      </TableCell>
+                    ))}
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8}>
+                      <TableCell colSpan={2 + procesosColumns.length}>
                         <Typography variant="body2" color="text.secondary">
-                          No hay órdenes para mostrar.
+                          No hay órdenes en producción.
                         </Typography>
                       </TableCell>
                     </TableRow>
                   ) : (
                     filtered.map((orden) => {
-                      const procesos = orden?.procesos || []
-                      const totalEntrada = sumProcesos(procesos, 'cantidad_entrada')
-                      const totalSalida = sumProcesos(procesos, 'cantidad_salida')
-                      const totalPerdida = sumProcesos(procesos, 'cantidad_perdida')
+                      const procesosOrdenados = ordenarProcesos(orden?.procesos || [])
                       return (
-                        <TableRow key={orden?.id ?? orden?.codigo}>
-                          <TableCell>{orden?.codigo ?? '—'}</TableCell>
+                        <TableRow
+                          key={orden?.id ?? orden?.codigo}
+                          hover
+                          sx={{ cursor: 'pointer' }}
+                          onClick={() => handleOpenDetalle(orden)}
+                        >
                           <TableCell>{getProductoNombre(orden)}</TableCell>
-                          <TableCell>{getCantidadPlaneada(orden)}</TableCell>
-                          <TableCell>{orden?.prioridad ?? '—'}</TableCell>
                           <TableCell>{orden?.estado ?? '—'}</TableCell>
-                          <TableCell align="right">{totalEntrada}</TableCell>
-                          <TableCell align="right">{totalSalida}</TableCell>
-                          <TableCell align="right">{totalPerdida}</TableCell>
+                          {procesosColumns.map((col) => {
+                            const proc = procesosOrdenados.find(
+                              (p) =>
+                                String(p?.proceso_id ?? p?.id ?? getProcesoNombre(p)) === col.key
+                            )
+                            return (
+                              <TableCell key={col.key} align="center">
+                                {proc?.estado ?? '—'}
+                              </TableCell>
+                            )
+                          })}
                         </TableRow>
                       )
                     })
@@ -236,6 +196,79 @@ export default function ReportesProduccion() {
           </Stack>
         </Paper>
       </Stack>
+
+      <Dialog open={openDetalle} onClose={handleCloseDetalle} fullWidth maxWidth="lg">
+        <DialogTitle>Detalle de orden</DialogTitle>
+        <DialogContent dividers>
+          {!detalleOrden ? (
+            <Typography variant="body2" color="text.secondary">
+              Selecciona una orden para ver sus procesos.
+            </Typography>
+          ) : (
+            <>
+              <Stack spacing={1} sx={{ mb: 2 }}>
+                <Typography variant="subtitle2">
+                  Producto: {getProductoNombre(detalleOrden)}
+                </Typography>
+                <Typography variant="subtitle2">
+                  Estado: {detalleOrden?.estado ?? '—'}
+                </Typography>
+                <Typography variant="subtitle2">
+                  Cantidad planeada: {getCantidadPlaneada(detalleOrden)}
+                </Typography>
+              </Stack>
+
+              <Divider sx={{ mb: 2 }} />
+
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Orden</TableCell>
+                      <TableCell>Proceso</TableCell>
+                      <TableCell>Estado</TableCell>
+                      <TableCell align="right">Entrada</TableCell>
+                      <TableCell align="right">Salida</TableCell>
+                      <TableCell align="right">Pérdida</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {ordenarProcesos(detalleOrden?.procesos || []).length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6}>
+                          <Typography variant="body2" color="text.secondary">
+                            No hay procesos para esta orden.
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      ordenarProcesos(detalleOrden?.procesos || []).map((proc) => (
+                        <TableRow key={proc.id}>
+                          <TableCell>{proc.orden ?? '—'}</TableCell>
+                          <TableCell>{getProcesoNombre(proc)}</TableCell>
+                          <TableCell>{proc.estado ?? '—'}</TableCell>
+                          <TableCell align="right">
+                            {proc.cantidad_entrada ?? '—'}
+                          </TableCell>
+                          <TableCell align="right">
+                            {proc.cantidad_salida ?? '—'}
+                          </TableCell>
+                          <TableCell align="right">
+                            {proc.cantidad_perdida ?? '—'}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDetalle}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }
