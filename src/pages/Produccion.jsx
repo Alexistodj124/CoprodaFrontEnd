@@ -381,7 +381,19 @@ export default function Produccion() {
     }
 
     const objetivo = entradaAuto - (Number.isFinite(perdidaTotal) ? perdidaTotal : 0)
-    const completar = Number.isFinite(objetivo) && salidaTotal >= objetivo
+    let completar = Number.isFinite(objetivo) && salidaTotal >= objetivo
+    if (
+      completar &&
+      prevProc &&
+      String(prevProc.estado || '').toUpperCase() !== 'COMPLETADO'
+    ) {
+      completar = false
+      setSnack({
+        open: true,
+        msg: 'Proceso guardado como parcial: el proceso anterior no está completado',
+        severity: 'warning',
+      })
+    }
 
     if (String(proc.estado || '').toUpperCase() === 'PENDIENTE') {
       await handleAccionProceso(proc.id, 'iniciar')
@@ -632,6 +644,8 @@ export default function Produccion() {
                             cantidad_salida: '',
                             cantidad_perdida: '',
                           }
+                          const isCompletado =
+                            String(proc.estado || '').toUpperCase() === 'COMPLETADO'
                           const procesosOrdenados = ordenarProcesos(detalleOrden?.procesos || [])
                           const idx = procesosOrdenados.findIndex((p) => p.id === proc.id)
                           const prevProc = idx > 0 ? procesosOrdenados[idx - 1] : null
@@ -668,6 +682,7 @@ export default function Produccion() {
                                       },
                                     }))
                                   }
+                                  disabled={isCompletado}
                                   inputProps={{ min: 0 }}
                                 />
                               </TableCell>
@@ -685,6 +700,7 @@ export default function Produccion() {
                                       },
                                     }))
                                   }
+                                  disabled={isCompletado}
                                   inputProps={{ min: 0 }}
                                 />
                               </TableCell>
@@ -693,6 +709,7 @@ export default function Produccion() {
                                   size="small"
                                   variant="outlined"
                                   onClick={() => handleActualizarProceso(proc)}
+                                  disabled={isCompletado}
                                 >
                                   Actualizar
                                 </Button>
