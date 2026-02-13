@@ -310,7 +310,13 @@ export default function Produccion() {
     }
   }
 
-  const handleAccionProceso = async (procesoOrdenId, accion, payload, ordenIdOverride) => {
+  const handleAccionProceso = async (
+    procesoOrdenId,
+    accion,
+    payload,
+    ordenIdOverride,
+    options = {}
+  ) => {
     const ordenId = ordenIdOverride ?? selectedOrdenId
     if (!ordenId || !procesoOrdenId) return
     try {
@@ -337,8 +343,10 @@ export default function Produccion() {
       }
 
       setSnack({ open: true, msg: 'Proceso actualizado', severity: 'success' })
-      await cargarDetalleOrden(ordenId)
-      await cargarOrdenes()
+      if (!options.skipRefresh) {
+        await cargarDetalleOrden(ordenId)
+        await cargarOrdenes()
+      }
     } catch (err) {
       console.error(err)
       setSnack({
@@ -408,7 +416,7 @@ export default function Produccion() {
     }
 
     if (String(proc.estado || '').toUpperCase() === 'PENDIENTE') {
-      await handleAccionProceso(proc.id, 'iniciar')
+      await handleAccionProceso(proc.id, 'iniciar', null, undefined, { skipRefresh: true })
     }
 
     const payload = {
@@ -418,7 +426,7 @@ export default function Produccion() {
       ...(completar ? {} : { parcial: true }),
     }
 
-    await handleAccionProceso(proc.id, 'completar', payload)
+    await handleAccionProceso(proc.id, 'completar', payload, undefined, { skipRefresh: true })
 
     if (idx >= 0 && idx < procesosOrdenados.length - 1 && salidaTotal > 0) {
       const nextProc = procesosOrdenados[idx + 1]
@@ -427,15 +435,18 @@ export default function Produccion() {
         const deltaSalida = Number.isFinite(salidaInput) ? salidaInput : 0
         const nuevaEntrada = nextEntradaActual + deltaSalida
         if (String(nextProc.estado || '').toUpperCase() === 'PENDIENTE') {
-          await handleAccionProceso(nextProc.id, 'iniciar')
+          await handleAccionProceso(nextProc.id, 'iniciar', null, undefined, { skipRefresh: true })
         }
         await handleAccionProceso(nextProc.id, 'completar', {
           cantidad_entrada: nuevaEntrada,
           cantidad_salida: Number(nextProc?.cantidad_salida || 0),
           parcial: true,
-        })
+        }, undefined, { skipRefresh: true })
       }
     }
+
+    await cargarDetalleOrden(selectedOrdenId)
+    await cargarOrdenes()
 
     setCompletarInputs((prev) => ({
       ...prev,
