@@ -6,6 +6,7 @@ import AddBoxIcon from '@mui/icons-material/AddBox'
 import ExtensionIcon from '@mui/icons-material/Extension'
 import Inventory2Icon from '@mui/icons-material/Inventory2'
 import ScienceIcon from '@mui/icons-material/Science'
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
 import AssessmentIcon from '@mui/icons-material/Assessment'
 import ModuleCard from '../components/ModuleCard'
 import { useAuth } from '../context/AuthContext'
@@ -55,6 +56,13 @@ const modules = [
     title: 'Stocks Materia Prima',
     icon: ScienceIcon,
     subtitle: 'Stock de materias primas',
+  },
+  {
+    to: '/materias-primas/nueva',
+    permiso: 'Produccion',
+    title: 'Materia Prima',
+    icon: AddCircleOutlineIcon,
+    subtitle: 'Crear una nueva materia prima',
   },
   {
     to: '/stocks?tab=componentes',
