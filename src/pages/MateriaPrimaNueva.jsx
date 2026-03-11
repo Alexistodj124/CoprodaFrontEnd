@@ -22,7 +22,7 @@ const toNumber = (value) => {
 const initialForm = {
   nombre: '',
   codigo: '',
-  costo_unitario: '',
+  costo_unitario: 0,
   stock_actual: '',
   stock_minimo: '',
   activo: true,
@@ -44,16 +44,12 @@ export default function MateriaPrimaNueva() {
 
     const nombre = form.nombre.trim()
     const codigo = form.codigo.trim()
-    const costoUnitario = toNumber(form.costo_unitario)
+    const costoUnitario = 0
     const stockActual = toNumber(form.stock_actual)
     const stockMinimo = toNumber(form.stock_minimo)
 
     if (!nombre || !codigo) {
       setSnack({ open: true, msg: 'Nombre y código son requeridos', severity: 'error' })
-      return
-    }
-    if (costoUnitario == null || costoUnitario < 0) {
-      setSnack({ open: true, msg: 'Costo unitario debe ser numérico y >= 0', severity: 'error' })
       return
     }
     if (stockActual == null || stockActual < 0 || stockMinimo == null || stockMinimo < 0) {
@@ -114,6 +110,7 @@ export default function MateriaPrimaNueva() {
 
           <Box component="form" onSubmit={handleSubmit}>
             <Stack spacing={2}>
+              <input type="hidden" name="costo_unitario" value="0" />
               <TextField
                 label="Nombre"
                 value={form.nombre}
@@ -125,14 +122,6 @@ export default function MateriaPrimaNueva() {
                 label="Código"
                 value={form.codigo}
                 onChange={setField('codigo')}
-                required
-              />
-              <TextField
-                label="Costo unitario"
-                type="number"
-                value={form.costo_unitario}
-                onChange={setField('costo_unitario')}
-                inputProps={{ min: 0, step: '0.01' }}
                 required
               />
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
