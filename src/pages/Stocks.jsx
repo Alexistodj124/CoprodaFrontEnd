@@ -27,8 +27,9 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import { API_BASE_URL } from '../config/api'
 
 const TABS = [
-  { id: 'finales', label: 'Productos finales' },
-  { id: 'componentes', label: 'Producto Agranel' },
+  { id: 'finales', label: 'Terminados' },
+  { id: 'agranel', label: 'Producto Agranel' },
+  { id: 'componentes', label: 'Componentes' },
   { id: 'materias', label: 'Materias primas' },
 ]
 
@@ -40,7 +41,9 @@ const toNumber = (value) => {
 export default function Stocks() {
   const location = useLocation()
   const [tab, setTab] = React.useState('finales')
-  const [productos, setProductos] = React.useState([])
+  const [productosTerminados, setProductosTerminados] = React.useState([])
+  const [productosAgranel, setProductosAgranel] = React.useState([])
+  const [productosComponentes, setProductosComponentes] = React.useState([])
   const [materiasPrimas, setMateriasPrimas] = React.useState([])
   const [loading, setLoading] = React.useState(false)
   const [snack, setSnack] = React.useState({ open: false, msg: '', severity: 'success' })
@@ -65,15 +68,39 @@ export default function Stocks() {
     }
   }, [location.search])
 
-  const cargarProductos = async () => {
+  const cargarProductosTerminados = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/productos`)
-      if (!res.ok) throw new Error('Error al obtener productos')
+      const res = await fetch(`${API_BASE_URL}/productos?es_producto_final=true&es_terminado=true`)
+      if (!res.ok) throw new Error('Error al obtener productos terminados')
       const data = await res.json()
-      setProductos(data || [])
+      setProductosTerminados(data || [])
     } catch (err) {
       console.error(err)
-      setSnack({ open: true, msg: 'No se pudieron cargar productos', severity: 'error' })
+      setSnack({ open: true, msg: 'No se pudieron cargar productos terminados', severity: 'error' })
+    }
+  }
+
+  const cargarProductosAgranel = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/productos?es_producto_final=true&es_terminado=false`)
+      if (!res.ok) throw new Error('Error al obtener producto agranel')
+      const data = await res.json()
+      setProductosAgranel(data || [])
+    } catch (err) {
+      console.error(err)
+      setSnack({ open: true, msg: 'No se pudo cargar producto agranel', severity: 'error' })
+    }
+  }
+
+  const cargarProductosComponentes = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/productos?es_producto_final=false`)
+      if (!res.ok) throw new Error('Error al obtener componentes')
+      const data = await res.json()
+      setProductosComponentes(data || [])
+    } catch (err) {
+      console.error(err)
+      setSnack({ open: true, msg: 'No se pudieron cargar componentes', severity: 'error' })
     }
   }
 
@@ -91,16 +118,18 @@ export default function Stocks() {
 
   const recargarTodo = async () => {
     setLoading(true)
-    await Promise.all([cargarProductos(), cargarMateriasPrimas()])
+    await Promise.all([
+      cargarProductosTerminados(),
+      cargarProductosAgranel(),
+      cargarProductosComponentes(),
+      cargarMateriasPrimas(),
+    ])
     setLoading(false)
   }
 
   React.useEffect(() => {
     recargarTodo()
   }, [])
-
-  const productosFinales = productos.filter((p) => p?.es_producto_final)
-  const productosComponentes = productos.filter((p) => p?.es_producto_final === false)
 
   const handleGuardarProducto = async (producto) => {
     const edits = editProductos[producto.id] || {}
@@ -133,7 +162,21 @@ export default function Stocks() {
       }
 
       setSnack({ open: true, msg: 'Stock actualizado', severity: 'success' })
-      await cargarProductos()
+      if (producto?.es_producto_final === true) {
+        if (producto?.es_terminado === false) {
+          await cargarProductosAgranel()
+        } else {
+          await cargarProductosTerminados()
+        }
+      } else if (producto?.es_producto_final === false) {
+        await cargarProductosComponentes()
+      } else {
+        await Promise.all([
+          cargarProductosTerminados(),
+          cargarProductosAgranel(),
+          cargarProductosComponentes(),
+        ])
+      }
     } catch (err) {
       console.error(err)
       setSnack({ open: true, msg: 'Error de red al actualizar stock', severity: 'error' })
@@ -399,7 +442,8 @@ export default function Stocks() {
             ))}
           </Tabs>
 
-          {tab === 'finales' && renderTablaProductos(productosFinales)}
+          {tab === 'finales' && renderTablaProductos(productosTerminados)}
+          {tab === 'agranel' && renderTablaProductos(productosAgranel)}
           {tab === 'componentes' && renderTablaProductos(productosComponentes)}
           {tab === 'materias' && renderTablaMaterias()}
         </Paper>
