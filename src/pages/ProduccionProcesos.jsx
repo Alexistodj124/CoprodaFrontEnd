@@ -14,6 +14,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  FormControlLabel,
+  Switch,
   Table,
   TableBody,
   TableCell,
@@ -39,6 +41,7 @@ const initialProducto = {
   foto: '',
   activo: true,
   esProductoFinal: true,
+  esTerminado: true,
   stock: 0,
 }
 
@@ -102,6 +105,13 @@ export default function ProduccionProcesos() {
 
   const aplicarProductoEnFormulario = (data) => {
     if (!data) return
+
+    const esProductoFinal = data.es_producto_final ?? data.esProductoFinal ?? true
+    const esTerminado =
+      data.es_terminado ??
+      data.esTerminado ??
+      (esProductoFinal === false ? false : true)
+
     setProducto((prev) => ({
       ...prev,
       nombre: data.nombre ?? data.descripcion ?? '',
@@ -112,7 +122,8 @@ export default function ProduccionProcesos() {
       precioMayorista: data.precio_mayorista ?? data.precioMayorista ?? 0,
       foto: data.foto ?? '',
       activo: data.activo ?? true,
-      esProductoFinal: data.es_producto_final ?? data.esProductoFinal ?? true,
+      esProductoFinal,
+      esTerminado,
       stock: data.stock ?? 0,
     }))
   }
@@ -386,6 +397,7 @@ export default function ProduccionProcesos() {
         foto: producto.foto || null,
         activo: Boolean(producto.activo),
         es_producto_final: Boolean(producto.esProductoFinal),
+        es_terminado: Boolean(producto.esProductoFinal) ? Boolean(producto.esTerminado) : false,
         stock: Number(producto.stock) || 0,
       }
 
@@ -522,6 +534,20 @@ export default function ProduccionProcesos() {
                 </MenuItem>
               ))}
             </TextField>
+
+            {!isComponente ? (
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={Boolean(producto.esTerminado)}
+                    onChange={(e) =>
+                      setProducto((prev) => ({ ...prev, esTerminado: e.target.checked }))
+                    }
+                  />
+                }
+                label={producto.esTerminado ? 'Terminado' : 'Agranel'}
+              />
+            ) : null}
 
             {productoId ? (
               <Typography variant="body2" color="text.secondary">
