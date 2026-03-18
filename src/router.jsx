@@ -20,6 +20,7 @@ import Bancos from './pages/Bancos.jsx'
 import Abonos from './pages/Abonos.jsx'
 import Stocks from './pages/Stocks.jsx'
 import MateriaPrimaNueva from './pages/MateriaPrimaNueva.jsx'
+import ProcesoNuevo from './pages/ProcesoNuevo.jsx'
 import { RequireAuth, RequirePermiso } from './ProtectedRoutes.jsx'
 
 const router = createBrowserRouter(
@@ -157,6 +158,14 @@ const router = createBrowserRouter(
           element: (
             <RequirePermiso permiso="Produccion">
               <MateriaPrimaNueva />
+            </RequirePermiso>
+          ),
+        },
+        {
+          path: 'procesos/nuevo',
+          element: (
+            <RequirePermiso permiso="Produccion">
+              <ProcesoNuevo />
             </RequirePermiso>
           ),
         },

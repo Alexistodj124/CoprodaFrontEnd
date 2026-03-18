@@ -7,6 +7,7 @@ import ExtensionIcon from '@mui/icons-material/Extension'
 import Inventory2Icon from '@mui/icons-material/Inventory2'
 import ScienceIcon from '@mui/icons-material/Science'
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
+import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd'
 import AssessmentIcon from '@mui/icons-material/Assessment'
 import ModuleCard from '../components/ModuleCard'
 import { useAuth } from '../context/AuthContext'
@@ -42,6 +43,13 @@ const modules = [
     title: 'Agregar Componente',
     icon: ExtensionIcon,
     subtitle: 'Asignar procesos a componentes',
+  },
+  {
+    to: '/procesos/nuevo',
+    permiso: 'Produccion',
+    title: 'Nuevo Proceso',
+    icon: PlaylistAddIcon,
+    subtitle: 'Crear un proceso del catálogo',
   },
   {
     to: '/reportes-produccion',
