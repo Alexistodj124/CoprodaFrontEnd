@@ -5,9 +5,11 @@ import {
   Card,
   CardContent,
   Chip,
+  Collapse,
   Container,
   Divider,
   Grid,
+  IconButton,
   Stack,
   Typography,
   GlobalStyles,
@@ -20,6 +22,8 @@ import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined
 import VerifiedOutlinedIcon from '@mui/icons-material/VerifiedOutlined'
 import DesignServicesOutlinedIcon from '@mui/icons-material/DesignServicesOutlined'
 import WhatsAppIcon from '@mui/icons-material/WhatsApp'
+import MenuRoundedIcon from '@mui/icons-material/MenuRounded'
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import logoCoproda from '../assets/logocoprodahome2.png'
 import catalogo1 from '../assets/ProductosCatalogo/1.png'
 import catalogo2 from '../assets/ProductosCatalogo/2.png'
@@ -91,8 +95,7 @@ const navItems = [
   { label: 'Contacto', href: '#contacto' },
 ]
 
-const sectionScrollOffset = { xs: '152px', md: '96px' }
-const sectionScrollOffsetPx = { xs: 152, md: 96 }
+const sectionScrollOffset = { xs: '16px', md: '20px' }
 
 function ScrollReveal({ children, delay = 0, distance = 32, duration = 5000, sx, ...props }) {
   const ref = React.useRef(null)
@@ -148,17 +151,20 @@ function ScrollReveal({ children, delay = 0, distance = 32, duration = 5000, sx,
 }
 
 export default function CoprodaLanding() {
-  const getScrollOffset = React.useCallback(() => {
-    if (typeof window === 'undefined') {
-      return sectionScrollOffsetPx.md
-    }
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
+  const headerRef = React.useRef(null)
 
-    return window.innerWidth < 900 ? sectionScrollOffsetPx.xs : sectionScrollOffsetPx.md
+  const getScrollOffset = React.useCallback(() => {
+    const headerHeight = headerRef.current?.offsetHeight ?? 0
+    const breathingRoom = window.innerWidth < 900 ? 16 : 20
+
+    return headerHeight + breathingRoom
   }, [])
 
   const scrollToSection = React.useCallback(
     (targetId, duration = 1800) => (event) => {
       event.preventDefault()
+      setMobileMenuOpen(false)
 
       if (typeof window === 'undefined') {
         return
@@ -235,6 +241,7 @@ export default function CoprodaLanding() {
       />
 
       <Box
+        ref={headerRef}
         sx={{
           position: 'sticky',
           top: 0,
@@ -244,12 +251,34 @@ export default function CoprodaLanding() {
           borderBottom: '1px solid #e4e7ec',
         }}
       >
-        <Container maxWidth="xl" sx={{ py: 1.5 }}>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
-            <Stack direction="row" spacing={2} alignItems="center" sx={{ flex: 1 }}>
-              <Box component="img" src={logoCoproda} alt="Coproda" sx={{ height: 48 }} />
+        <Container maxWidth="xl" sx={{ py: { xs: 1, md: 1.5 }, px: { xs: 2, sm: 3 } }}>
+          <Stack spacing={{ xs: 1.25, md: 2 }}>
+            <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
+              <Stack direction="row" spacing={2} alignItems="center" sx={{ flex: 1, justifyContent: { xs: 'flex-start', md: 'flex-start' } }}>
+                <Box component="img" src={logoCoproda} alt="Coproda" sx={{ height: { xs: 40, md: 48 } }} />
+              </Stack>
+              <IconButton
+                onClick={() => setMobileMenuOpen((prev) => !prev)}
+                sx={{
+                  display: { xs: 'inline-flex', md: 'none' },
+                  color: '#111827',
+                  border: '1px solid #e4e7ec',
+                }}
+                aria-label={mobileMenuOpen ? 'Cerrar menu' : 'Abrir menu'}
+              >
+                {mobileMenuOpen ? <CloseRoundedIcon /> : <MenuRoundedIcon />}
+              </IconButton>
             </Stack>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
+
+            <Stack
+              direction="row"
+              spacing={{ xs: 0.75, md: 2 }}
+              alignItems="center"
+              useFlexGap
+              flexWrap="wrap"
+              justifyContent="center"
+              sx={{ display: { xs: 'none', md: 'flex' } }}
+            >
               {navItems.map((item) => (
                 <Button
                   key={item.label}
@@ -259,8 +288,11 @@ export default function CoprodaLanding() {
                     color: '#1f2937',
                     fontWeight: 600,
                     textTransform: 'uppercase',
-                    fontSize: 12,
-                    letterSpacing: '0.12em',
+                    fontSize: { xs: 11, md: 12 },
+                    minWidth: 'auto',
+                    px: { xs: 1, md: 1.5 },
+                    py: { xs: 0.5, md: 0.75 },
+                    letterSpacing: { xs: '0.08em', md: '0.12em' },
                     '&:hover': { color: '#ef4444' },
                   }}
                 >
@@ -276,13 +308,63 @@ export default function CoprodaLanding() {
                   color: 'white',
                   textTransform: 'none',
                   borderRadius: 999,
-                  px: 3,
+                  px: { xs: 2, md: 3 },
+                  py: { xs: 0.7, md: 0.9 },
                   '&:hover': { bgcolor: '#1f2937' },
                 }}
               >
                 Cotizar
               </Button>
             </Stack>
+
+            <Collapse in={mobileMenuOpen} timeout={280} sx={{ display: { xs: 'block', md: 'none' } }}>
+              <Stack
+                spacing={1}
+                sx={{
+                  pt: 0.5,
+                  pb: 0.25,
+                  borderTop: '1px solid #e4e7ec',
+                }}
+              >
+                {navItems.map((item) => (
+                  <Button
+                    key={item.label}
+                    href={item.href}
+                    onClick={scrollToSection(item.href)}
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: '#1f2937',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      fontSize: 12,
+                      letterSpacing: '0.08em',
+                      px: 1,
+                      py: 1.1,
+                      borderRadius: 2,
+                    }}
+                  >
+                    {item.label}
+                  </Button>
+                ))}
+                <Button
+                  variant="contained"
+                  href="#contacto"
+                  onClick={scrollToSection('#contacto')}
+                  sx={{
+                    mt: 0.5,
+                    bgcolor: '#111827',
+                    color: 'white',
+                    textTransform: 'none',
+                    borderRadius: 999,
+                    px: 2,
+                    py: 1,
+                    '&:hover': { bgcolor: '#1f2937' },
+                  }}
+                >
+                  Cotizar
+                </Button>
+              </Stack>
+            </Collapse>
           </Stack>
         </Container>
       </Box>
@@ -304,18 +386,18 @@ export default function CoprodaLanding() {
             background: 'linear-gradient(120deg, rgba(247,246,244,0.9), rgba(247,246,244,0.2))',
           }}
         />
-        <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1, py: { xs: 8, md: 12 } }}>
+        <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1, py: { xs: 6, md: 12 }, px: { xs: 2, sm: 3 } }}>
           <Grid container spacing={4} alignItems="center">
             <Grid item xs={12} md={6}>
               <ScrollReveal>
                 <Stack spacing={3}>
-                  <Typography variant="overline" sx={{ letterSpacing: '0.4em', color: '#ef4444' }}>
+                  <Typography variant="overline" sx={{ letterSpacing: { xs: '0.2em', md: '0.4em' }, color: '#ef4444' }}>
                     COMPANIA PROCESADORA DE ALUMINIO
                   </Typography>
-                  <Typography variant="h1" sx={{ fontSize: { xs: 40, md: 72 }, lineHeight: 1.02 }}>
+                  <Typography variant="h1" sx={{ fontSize: { xs: 34, sm: 40, md: 72 }, lineHeight: 1.02 }}>
                     Aluminio con diseno, durabilidad y presencia.
                   </Typography>
-                  <Typography variant="h6" sx={{ color: '#4b5563', maxWidth: 520 }}>
+                  <Typography variant="h6" sx={{ color: '#4b5563', maxWidth: 520, fontSize: { xs: 18, md: 21 } }}>
                     Fabricamos utensilios de cocina de aluminio con procesos de calidad para hogares y negocios.
                   </Typography>
                   <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
@@ -330,6 +412,7 @@ export default function CoprodaLanding() {
                         py: 1.4,
                         textTransform: 'none',
                         borderRadius: 999,
+                        width: { xs: '100%', sm: 'auto' },
                         boxShadow: '0 22px 40px rgba(239,68,68,0.3)',
                         '&:hover': { bgcolor: '#dc2626' },
                       }}
@@ -347,6 +430,7 @@ export default function CoprodaLanding() {
                         py: 1.4,
                         textTransform: 'none',
                         borderRadius: 999,
+                        width: { xs: '100%', sm: 'auto' },
                       }}
                     >
                       Nuestra empresa
@@ -357,14 +441,14 @@ export default function CoprodaLanding() {
             </Grid>
             <Grid item xs={12} md={6}>
               <ScrollReveal delay={140} distance={40}>
-                <Card
-                  sx={{
-                    borderRadius: 5,
-                    bgcolor: 'white',
-                    boxShadow: '0 28px 60px rgba(17,24,39,0.2)',
-                  }}
-                >
-                  <CardContent>
+                  <Card
+                    sx={{
+                      borderRadius: 5,
+                      bgcolor: 'white',
+                      boxShadow: '0 28px 60px rgba(17,24,39,0.2)',
+                    }}
+                  >
+                  <CardContent sx={{ p: { xs: 2.25, md: 3 } }}>
                     <Stack spacing={2}>
                       <Typography variant="h6" sx={{ fontWeight: 700 }}>
                         Datos clave
@@ -388,7 +472,7 @@ export default function CoprodaLanding() {
       </Box>
 
       <Box id="empresa" sx={{ py: { xs: 6, md: 8 }, bgcolor: '#111827', scrollMarginTop: sectionScrollOffset }}>
-        <Container maxWidth="xl">
+        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3 } }}>
           <ScrollReveal sx={{ mb: 4 }}>
             <Stack spacing={2}>
               <Typography variant="h2" sx={{ fontSize: { xs: 32, md: 42 }, color: 'white' }}>
@@ -433,7 +517,7 @@ export default function CoprodaLanding() {
       </Box>
 
       <Box id="productos" sx={{ py: { xs: 6, md: 8 }, bgcolor: '#f7f6f4', scrollMarginTop: sectionScrollOffset }}>
-        <Container maxWidth="xl">
+        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3 } }}>
           <ScrollReveal sx={{ mb: 4 }}>
             <Stack spacing={1} alignItems="center">
               <Typography variant="overline" sx={{ letterSpacing: '0.4em', color: '#ef4444' }}>
@@ -453,7 +537,7 @@ export default function CoprodaLanding() {
                 md: 'repeat(4, minmax(0, 1fr))',
                 lg: 'repeat(4, minmax(0, 1fr))',
               },
-              gap: { xs: 2, md: 2.5 },
+              gap: { xs: 1.25, sm: 2, md: 2.5 },
             }}
           >
             {featuredSets.map((item, index) => (
@@ -472,11 +556,22 @@ export default function CoprodaLanding() {
                       alt={item.title}
                       sx={{ width: '100%', aspectRatio: '4 / 5', objectFit: 'cover', display: 'block' }}
                     />
-                    <CardContent sx={{ p: { xs: 1.25, md: 1.5 } }}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.75, lineHeight: 1.2 }}>
+                    <CardContent sx={{ p: { xs: 1, md: 1.5 } }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5, lineHeight: 1.2, fontSize: { xs: 13, sm: 16 } }}>
                         {item.title}
                       </Typography>
-                      <Typography variant="caption" sx={{ color: '#4b5563', lineHeight: 1.5, display: 'block' }}>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: '#4b5563',
+                          lineHeight: 1.45,
+                          display: '-webkit-box',
+                          WebkitLineClamp: { xs: 2, sm: 3 },
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          fontSize: { xs: 10.5, sm: 12 },
+                        }}
+                      >
                         {item.copy}
                       </Typography>
                     </CardContent>
@@ -488,7 +583,7 @@ export default function CoprodaLanding() {
       </Box>
 
       <Box id="capacidades" sx={{ py: { xs: 6, md: 8 }, bgcolor: '#111827', scrollMarginTop: sectionScrollOffset }}>
-        <Container maxWidth="xl">
+        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3 } }}>
           <Grid container spacing={4} alignItems="center">
             <Grid item xs={12} md={6}>
               <ScrollReveal>
@@ -554,7 +649,7 @@ export default function CoprodaLanding() {
       </Box>
 
       <Box id="contacto" sx={{ py: { xs: 6, md: 8 }, bgcolor: '#f7f6f4', scrollMarginTop: sectionScrollOffset }}>
-        <Container maxWidth="xl">
+        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3 } }}>
           <Grid container spacing={4} alignItems="center">
             <Grid item xs={12} md={6}>
               <ScrollReveal>
@@ -575,8 +670,8 @@ export default function CoprodaLanding() {
                       <Typography variant="body1">info@coproda.com.gt</Typography>
                     </Stack>
                     <Stack direction="row" spacing={2} alignItems="center">
-                      <PlaceOutlinedIcon sx={{ color: '#ef4444' }} />
-                      <Typography variant="body1">
+                      <PlaceOutlinedIcon sx={{ color: '#ef4444', mt: { xs: 0.5, md: 0 } }} />
+                      <Typography variant="body1" sx={{ fontSize: { xs: 15, md: 16 } }}>
                         4a Avenida 3-19, Zona 1, Boca del Monte, Guatemala
                       </Typography>
                     </Stack>
@@ -615,6 +710,7 @@ export default function CoprodaLanding() {
                         borderRadius: 999,
                         px: 3,
                         py: 1.2,
+                        width: { xs: '100%', sm: 'auto' },
                         '&:hover': { bgcolor: '#1ebe5d' },
                       }}
                     >
@@ -646,8 +742,8 @@ export default function CoprodaLanding() {
           right: { xs: 16, md: 24 },
           bottom: { xs: 16, md: 24 },
           minWidth: 'auto',
-          width: { xs: 64, sm: 'auto' },
-          height: 64,
+          width: { xs: 58, sm: 'auto' },
+          height: { xs: 58, sm: 64 },
           px: { xs: 0, sm: 2.5 },
           borderRadius: { xs: '50%', sm: 999 },
           bgcolor: '#25D366',
