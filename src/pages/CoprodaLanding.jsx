@@ -19,7 +19,16 @@ import WarehouseOutlinedIcon from '@mui/icons-material/WarehouseOutlined'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
 import VerifiedOutlinedIcon from '@mui/icons-material/VerifiedOutlined'
 import DesignServicesOutlinedIcon from '@mui/icons-material/DesignServicesOutlined'
+import WhatsAppIcon from '@mui/icons-material/WhatsApp'
 import logoCoproda from '../assets/logocoprodahome2.png'
+import catalogo1 from '../assets/ProductosCatalogo/1.png'
+import catalogo2 from '../assets/ProductosCatalogo/2.png'
+import catalogo3 from '../assets/ProductosCatalogo/3.png'
+import catalogo4 from '../assets/ProductosCatalogo/4.png'
+import catalogo5 from '../assets/ProductosCatalogo/5.png'
+import catalogo6 from '../assets/ProductosCatalogo/6.png'
+import catalogo7 from '../assets/ProductosCatalogo/7.png'
+import catalogo8 from '../assets/ProductosCatalogo/8.png'
 
 const heroArt =
   'data:image/svg+xml;utf8,' +
@@ -40,26 +49,17 @@ const heroArt =
 </svg>
 `)
 
-const productArt = (accent, label) =>
-  'data:image/svg+xml;utf8,' +
-  encodeURIComponent(`
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 520 360'>
-  <rect width='520' height='360' rx='30' fill='#ffffff'/>
-  <rect x='0' y='0' width='520' height='90' fill='${accent}'/>
-  <text x='28' y='58' font-size='34' font-family='Arial, sans-serif' fill='#ffffff' font-weight='700'>${label}</text>
-  <rect x='36' y='126' width='448' height='190' rx='24' fill='#eef1f5'/>
-  <circle cx='190' cy='220' r='52' fill='#d6dbe2'/>
-  <circle cx='320' cy='220' r='64' fill='#c9cfd8'/>
-</svg>
-`)
-
 const featuredSets = [
-  { title: 'Linea de vajillas especializadas', pieces: 'Restaurantes y hoteles', tone: '#ef4444' },
-  { title: 'Utensilios de uso domestico', pieces: 'Cocina diaria', tone: '#f97316' },
-  { title: 'Utensilios de uso profesional', pieces: 'Mayoristas', tone: '#f59e0b' },
+  { title: 'Producto 01', copy: 'Descripcion breve del producto para reemplazar despues.', image: catalogo1 },
+  { title: 'Producto 02', copy: 'Descripcion breve del producto para reemplazar despues.', image: catalogo2 },
+  { title: 'Producto 03', copy: 'Descripcion breve del producto para reemplazar despues.', image: catalogo3 },
+  { title: 'Producto 04', copy: 'Descripcion breve del producto para reemplazar despues.', image: catalogo4 },
+  { title: 'Producto 05', copy: 'Descripcion breve del producto para reemplazar despues.', image: catalogo5 },
+  { title: 'Producto 06', copy: 'Descripcion breve del producto para reemplazar despues.', image: catalogo6 },
+  { title: 'Producto 07', copy: 'Descripcion breve del producto para reemplazar despues.', image: catalogo7 },
+  { title: 'Producto 08', copy: 'Descripcion breve del producto para reemplazar despues.', image: catalogo8 },
 ]
 
-const productos = ['Sartenes', 'Ollas', 'Tapas', 'Cafeteras', 'Bandejas', 'Accesorios']
 const servicios = ['Diseno personalizado', 'Mejora de rendimiento', 'Adaptacion de piezas', 'Alto volumen']
 
 const highlights = [
@@ -93,7 +93,7 @@ const navItems = [
 
 const sectionScrollOffset = { xs: '152px', md: '96px' }
 
-function ScrollReveal({ children, delay = 0, distance = 32, sx, ...props }) {
+function ScrollReveal({ children, delay = 0, distance = 32, duration = 5000, sx, ...props }) {
   const ref = React.useRef(null)
   const [isVisible, setIsVisible] = React.useState(false)
 
@@ -132,7 +132,7 @@ function ScrollReveal({ children, delay = 0, distance = 32, sx, ...props }) {
           opacity: isVisible ? 1 : 0,
           transform: isVisible ? 'translate3d(0, 0, 0)' : `translate3d(0, ${distance}px, 0)`,
           transitionProperty: 'opacity, transform',
-          transitionDuration: '5000ms',
+          transitionDuration: `${duration}ms`,
           transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
           transitionDelay: `${delay}ms`,
           willChange: 'opacity, transform',
@@ -166,6 +166,20 @@ export default function CoprodaLanding() {
           h2: {
             fontFamily: '"Playfair Display", "Georgia", serif',
           },
+          '@keyframes whatsPulse': {
+            '0%': {
+              boxShadow: '0 18px 36px rgba(37, 211, 102, 0.25)',
+              transform: 'scale(1)',
+            },
+            '50%': {
+              boxShadow: '0 18px 42px rgba(37, 211, 102, 0.4)',
+              transform: 'scale(1.03)',
+            },
+            '100%': {
+              boxShadow: '0 18px 36px rgba(37, 211, 102, 0.25)',
+              transform: 'scale(1)',
+            },
+          },
         }}
       />
 
@@ -183,9 +197,6 @@ export default function CoprodaLanding() {
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
             <Stack direction="row" spacing={2} alignItems="center" sx={{ flex: 1 }}>
               <Box component="img" src={logoCoproda} alt="Coproda" sx={{ height: 48 }} />
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#ef4444' }}>
-                COPRODA, S.A.
-              </Typography>
             </Stack>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
               {navItems.map((item) => (
@@ -378,78 +389,46 @@ export default function CoprodaLanding() {
               </Typography>
             </Stack>
           </ScrollReveal>
-          <Grid container spacing={3}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: 'repeat(2, minmax(0, 1fr))',
+                sm: 'repeat(3, minmax(0, 1fr))',
+                md: 'repeat(4, minmax(0, 1fr))',
+                lg: 'repeat(4, minmax(0, 1fr))',
+              },
+              gap: { xs: 2, md: 2.5 },
+            }}
+          >
             {featuredSets.map((item, index) => (
-              <Grid item xs={12} md={4} key={item.title}>
-                <ScrollReveal delay={90 * index} distance={38} sx={{ height: '100%' }}>
+              <ScrollReveal key={item.title} delay={140 * index} distance={38} duration={12000} sx={{ height: '100%' }}>
                   <Card
                     sx={{
                       height: '100%',
-                      borderRadius: 4,
+                      borderRadius: 3,
                       overflow: 'hidden',
-                      boxShadow: '0 20px 40px rgba(17,24,39,0.12)',
+                      boxShadow: '0 14px 30px rgba(17,24,39,0.1)',
                     }}
                   >
                     <Box
                       component="img"
-                      src={productArt(item.tone, 'COPRODA')}
+                      src={item.image}
                       alt={item.title}
-                      sx={{ width: '100%', height: 200, objectFit: 'cover' }}
+                      sx={{ width: '100%', aspectRatio: '4 / 5', objectFit: 'cover', display: 'block' }}
                     />
-                    <CardContent>
-                      <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
+                    <CardContent sx={{ p: { xs: 1.25, md: 1.5 } }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.75, lineHeight: 1.2 }}>
                         {item.title}
                       </Typography>
-                      <Typography variant="caption" sx={{ letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-                        {item.pieces}
+                      <Typography variant="caption" sx={{ color: '#4b5563', lineHeight: 1.5, display: 'block' }}>
+                        {item.copy}
                       </Typography>
                     </CardContent>
                   </Card>
                 </ScrollReveal>
-              </Grid>
             ))}
-          </Grid>
-
-          <Grid container spacing={4} sx={{ mt: 4 }}>
-            <Grid item xs={12} md={6}>
-              <ScrollReveal sx={{ height: '100%' }}>
-                <Card sx={{ height: '100%', borderRadius: 4, bgcolor: 'white' }}>
-                  <CardContent>
-                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-                      Utensilios domesticos y profesionales
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: '#4b5563', mb: 2 }}>
-                      Lineas para cocina diaria y servicio profesional, con variedad de formas y aplicaciones.
-                    </Typography>
-                    <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                      {productos.map((item) => (
-                        <Chip key={item} label={item} />
-                      ))}
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </ScrollReveal>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <ScrollReveal delay={120} sx={{ height: '100%' }}>
-                <Card sx={{ height: '100%', borderRadius: 4, bgcolor: 'white' }}>
-                  <CardContent>
-                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-                      Vajillas especializadas
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: '#4b5563', mb: 2 }}>
-                      Linea de vajillas para restaurantes u hoteles con disenos funcionales.
-                    </Typography>
-                    <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                      <Chip label="Restaurantes" />
-                      <Chip label="Hoteles" />
-                      <Chip label="Eventos" />
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </ScrollReveal>
-            </Grid>
-          </Grid>
+          </Box>
         </Container>
       </Box>
 
@@ -568,19 +547,23 @@ export default function CoprodaLanding() {
                       Solicita catalogos, precios y opciones de distribucion con nuestro equipo.
                     </Typography>
                     <Button
-                      variant="contained"
-                      href="#productos"
+                      component="a"
+                      href="https://wa.me/message/77O5L2IJLWD4P1"
+                      target="_blank"
+                      rel="noreferrer"
+                      startIcon={<WhatsAppIcon />}
                       sx={{
-                        bgcolor: '#ef4444',
+                        mt: 1.5,
+                        bgcolor: '#25D366',
                         color: 'white',
                         textTransform: 'none',
                         borderRadius: 999,
                         px: 3,
                         py: 1.2,
-                        '&:hover': { bgcolor: '#dc2626' },
+                        '&:hover': { bgcolor: '#1ebe5d' },
                       }}
                     >
-                      Explorar catalogo
+                      Escribir por WhatsApp
                     </Button>
                   </CardContent>
                 </Card>
@@ -595,6 +578,42 @@ export default function CoprodaLanding() {
           Coproda S.A. - Compañia Procesadora de Aluminio.
         </Typography>
       </Box>
+
+      <Button
+        component="a"
+        href="https://wa.me/message/77O5L2IJLWD4P1"
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Contactar por WhatsApp"
+        startIcon={<WhatsAppIcon sx={{ fontSize: 30 }} />}
+        sx={{
+          position: 'fixed',
+          right: { xs: 16, md: 24 },
+          bottom: { xs: 16, md: 24 },
+          minWidth: 'auto',
+          width: { xs: 64, sm: 'auto' },
+          height: 64,
+          px: { xs: 0, sm: 2.5 },
+          borderRadius: { xs: '50%', sm: 999 },
+          bgcolor: '#25D366',
+          color: 'white',
+          boxShadow: '0 18px 36px rgba(37, 211, 102, 0.35)',
+          animation: 'whatsPulse 2.8s ease-in-out infinite',
+          zIndex: 20,
+          '&:hover': {
+            bgcolor: '#1ebe5d',
+            transform: 'translateY(-2px)',
+            animationPlayState: 'paused',
+          },
+          '& .MuiButton-startIcon': {
+            margin: { xs: 0, sm: '0 8px 0 0' },
+          },
+        }}
+      >
+        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' }, whiteSpace: 'nowrap' }}>
+          Cotiza por WhatsApp
+        </Box>
+      </Button>
     </Box>
   )
 }
