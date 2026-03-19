@@ -92,6 +92,7 @@ const navItems = [
 ]
 
 const sectionScrollOffset = { xs: '152px', md: '96px' }
+const sectionScrollOffsetPx = { xs: 152, md: 96 }
 
 function ScrollReveal({ children, delay = 0, distance = 32, duration = 5000, sx, ...props }) {
   const ref = React.useRef(null)
@@ -147,13 +148,63 @@ function ScrollReveal({ children, delay = 0, distance = 32, duration = 5000, sx,
 }
 
 export default function CoprodaLanding() {
+  const getScrollOffset = React.useCallback(() => {
+    if (typeof window === 'undefined') {
+      return sectionScrollOffsetPx.md
+    }
+
+    return window.innerWidth < 900 ? sectionScrollOffsetPx.xs : sectionScrollOffsetPx.md
+  }, [])
+
+  const scrollToSection = React.useCallback(
+    (targetId, duration = 1800) => (event) => {
+      event.preventDefault()
+
+      if (typeof window === 'undefined') {
+        return
+      }
+
+      const target = document.querySelector(targetId)
+
+      if (!target) {
+        return
+      }
+
+      const startY = window.scrollY
+      const targetY = target.getBoundingClientRect().top + window.scrollY - getScrollOffset()
+      const distance = targetY - startY
+      const startTime = performance.now()
+
+      const easeInOutCubic = (progress) => {
+        return progress < 0.5
+          ? 4 * progress * progress * progress
+          : 1 - Math.pow(-2 * progress + 2, 3) / 2
+      }
+
+      const animateScroll = (currentTime) => {
+        const elapsed = currentTime - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        const easedProgress = easeInOutCubic(progress)
+
+        window.scrollTo(0, startY + distance * easedProgress)
+
+        if (progress < 1) {
+          window.requestAnimationFrame(animateScroll)
+          return
+        }
+
+        window.history.replaceState(null, '', targetId)
+      }
+
+      window.requestAnimationFrame(animateScroll)
+    },
+    [getScrollOffset]
+  )
+
   return (
     <Box sx={{ bgcolor: '#f7f6f4', color: '#111827', minHeight: '100vh' }}>
       <GlobalStyles
         styles={{
-          html: {
-            scrollBehavior: 'smooth',
-          },
           body: {
             backgroundColor: '#f7f6f4',
             color: '#111827',
@@ -203,6 +254,7 @@ export default function CoprodaLanding() {
                 <Button
                   key={item.label}
                   href={item.href}
+                  onClick={scrollToSection(item.href)}
                   sx={{
                     color: '#1f2937',
                     fontWeight: 600,
@@ -218,6 +270,7 @@ export default function CoprodaLanding() {
               <Button
                 variant="contained"
                 href="#contacto"
+                onClick={scrollToSection('#contacto')}
                 sx={{
                   bgcolor: '#111827',
                   color: 'white',
@@ -269,6 +322,7 @@ export default function CoprodaLanding() {
                     <Button
                       variant="contained"
                       href="#productos"
+                      onClick={scrollToSection('#productos')}
                       sx={{
                         bgcolor: '#ef4444',
                         color: 'white',
@@ -285,6 +339,7 @@ export default function CoprodaLanding() {
                     <Button
                       variant="outlined"
                       href="#empresa"
+                      onClick={scrollToSection('#empresa')}
                       sx={{
                         borderColor: '#111827',
                         color: '#111827',
