@@ -24,6 +24,7 @@ import {
 } from '@mui/material'
 import { useLocation } from 'react-router-dom'
 import RefreshIcon from '@mui/icons-material/Refresh'
+import BlockIcon from '@mui/icons-material/Block'
 import { API_BASE_URL } from '../config/api'
 
 const TABS = [
@@ -73,7 +74,7 @@ export default function Stocks() {
       const res = await fetch(`${API_BASE_URL}/productos?es_producto_final=true&es_terminado=true`)
       if (!res.ok) throw new Error('Error al obtener productos terminados')
       const data = await res.json()
-      setProductosTerminados(data || [])
+      setProductosTerminados((data || []).filter((item) => item?.activo !== false))
     } catch (err) {
       console.error(err)
       setSnack({ open: true, msg: 'No se pudieron cargar productos terminados', severity: 'error' })
@@ -85,7 +86,7 @@ export default function Stocks() {
       const res = await fetch(`${API_BASE_URL}/productos?es_producto_final=true&es_terminado=false`)
       if (!res.ok) throw new Error('Error al obtener producto agranel')
       const data = await res.json()
-      setProductosAgranel(data || [])
+      setProductosAgranel((data || []).filter((item) => item?.activo !== false))
     } catch (err) {
       console.error(err)
       setSnack({ open: true, msg: 'No se pudo cargar producto agranel', severity: 'error' })
@@ -97,7 +98,7 @@ export default function Stocks() {
       const res = await fetch(`${API_BASE_URL}/productos?es_producto_final=false`)
       if (!res.ok) throw new Error('Error al obtener componentes')
       const data = await res.json()
-      setProductosComponentes(data || [])
+      setProductosComponentes((data || []).filter((item) => item?.activo !== false))
     } catch (err) {
       console.error(err)
       setSnack({ open: true, msg: 'No se pudieron cargar componentes', severity: 'error' })
@@ -109,7 +110,7 @@ export default function Stocks() {
       const res = await fetch(`${API_BASE_URL}/materias-primas`)
       if (!res.ok) throw new Error('Error al obtener materias primas')
       const data = await res.json()
-      setMateriasPrimas(data || [])
+      setMateriasPrimas((data || []).filter((item) => item?.activo !== false))
     } catch (err) {
       console.error(err)
       setSnack({ open: true, msg: 'No se pudieron cargar materias primas', severity: 'error' })
@@ -217,6 +218,76 @@ export default function Stocks() {
     } catch (err) {
       console.error(err)
       setSnack({ open: true, msg: 'Error de red al actualizar stock mínimo', severity: 'error' })
+    }
+  }
+
+  const handleDesactivarProducto = async (producto) => {
+    if (!producto?.id) return
+    const ok = window.confirm(`¿Desactivar ${producto.nombre || 'este producto'}? Dejará de aparecer en stocks.`)
+    if (!ok) return
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/productos/${producto.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...producto, activo: false }),
+      })
+
+      if (!res.ok) {
+        const txt = await res.text()
+        let msg = 'No se pudo desactivar el producto'
+        try {
+          const parsed = JSON.parse(txt)
+          msg = parsed.error || parsed.message || msg
+        } catch (_) {
+          // noop
+        }
+        setSnack({ open: true, msg, severity: 'error' })
+        return
+      }
+
+      setSnack({ open: true, msg: 'Producto desactivado', severity: 'success' })
+      await Promise.all([
+        cargarProductosTerminados(),
+        cargarProductosAgranel(),
+        cargarProductosComponentes(),
+      ])
+    } catch (err) {
+      console.error(err)
+      setSnack({ open: true, msg: 'Error de red al desactivar producto', severity: 'error' })
+    }
+  }
+
+  const handleDesactivarMateria = async (materia) => {
+    if (!materia?.id) return
+    const ok = window.confirm(`¿Desactivar ${materia.nombre || 'esta materia prima'}? Dejará de aparecer en stocks.`)
+    if (!ok) return
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/materias-primas/${materia.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...materia, activo: false }),
+      })
+
+      if (!res.ok) {
+        const txt = await res.text()
+        let msg = 'No se pudo desactivar la materia prima'
+        try {
+          const parsed = JSON.parse(txt)
+          msg = parsed.error || parsed.message || msg
+        } catch (_) {
+          // noop
+        }
+        setSnack({ open: true, msg, severity: 'error' })
+        return
+      }
+
+      setSnack({ open: true, msg: 'Materia prima desactivada', severity: 'success' })
+      await cargarMateriasPrimas()
+    } catch (err) {
+      console.error(err)
+      setSnack({ open: true, msg: 'Error de red al desactivar materia prima', severity: 'error' })
     }
   }
 
@@ -339,9 +410,20 @@ export default function Stocks() {
                 </TableCell>
                 <TableCell>{item.activo === false ? 'No' : 'Sí'}</TableCell>
                 <TableCell align="right">
-                  <Button size="small" variant="outlined" onClick={() => handleGuardarProducto(item)}>
-                    Guardar
-                  </Button>
+                  <Stack direction="row" spacing={1} justifyContent="flex-end">
+                    <Button size="small" variant="outlined" onClick={() => handleGuardarProducto(item)}>
+                      Guardar
+                    </Button>
+                    <Button
+                      size="small"
+                      color="warning"
+                      variant="text"
+                      startIcon={<BlockIcon />}
+                      onClick={() => handleDesactivarProducto(item)}
+                    >
+                      Desactivar
+                    </Button>
+                  </Stack>
                 </TableCell>
               </TableRow>
             ))
@@ -403,6 +485,15 @@ export default function Stocks() {
                     </Button>
                     <Button size="small" variant="outlined" onClick={() => handleGuardarMinimoMateria(item)}>
                       Guardar mínimo
+                    </Button>
+                    <Button
+                      size="small"
+                      color="warning"
+                      variant="text"
+                      startIcon={<BlockIcon />}
+                      onClick={() => handleDesactivarMateria(item)}
+                    >
+                      Desactivar
                     </Button>
                   </Stack>
                 </TableCell>

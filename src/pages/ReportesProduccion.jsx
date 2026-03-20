@@ -27,7 +27,10 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import ScheduleIcon from '@mui/icons-material/Schedule'
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'
+import DeleteIcon from '@mui/icons-material/Delete'
+import BlockIcon from '@mui/icons-material/Block'
 import { API_BASE_URL } from '../config/api'
+import { useAuth } from '../context/AuthContext'
 
 const getProductoNombre = (orden, productosById) =>
   orden?.producto?.nombre ??
@@ -61,6 +64,8 @@ const getProcesoNombre = (proceso, procesosById) =>
   proceso?.proceso_id ??
   '—'
 
+const isOrdenCancelada = (orden) => String(orden?.estado || '').toUpperCase() === 'CANCELADA'
+
 const renderEstadoIcon = (estadoRaw) => {
   const estado = String(estadoRaw ?? '').toUpperCase()
   if (estado === 'COMPLETADO' || estado === 'COMPLETADA') {
@@ -76,6 +81,8 @@ const renderEstadoIcon = (estadoRaw) => {
 }
 
 export default function ReportesProduccion() {
+  const { hasAnyPermiso } = useAuth()
+  const canDeleteOrden = hasAnyPermiso(['maestro'])
   const [ordenes, setOrdenes] = React.useState([])
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState('')
@@ -219,6 +226,60 @@ export default function ReportesProduccion() {
 
   const handleCloseDetalle = () => {
     setOpenDetalle(false)
+  }
+
+  const handleEliminarOrden = async (ordenId) => {
+    if (!ordenId) return
+    const ok = window.confirm('¿Eliminar esta orden de producción?')
+    if (!ok) return
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/ordenes-produccion/${ordenId}`, {
+        method: 'DELETE',
+      })
+
+      if (!res.ok) {
+        throw new Error('No se pudo eliminar la orden')
+      }
+
+      setOpenDetalle(false)
+      setDetalleOrden(null)
+      await cargarOrdenes()
+    } catch (err) {
+      console.error(err)
+      setError('No se pudo eliminar la orden')
+    }
+  }
+
+  const handleCancelarOrden = async (ordenId) => {
+    if (!ordenId) return
+    const ok = window.confirm('¿Cancelar esta orden de producción? Se bloqueará y solo podrá eliminarse.')
+    if (!ok) return
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/ordenes-produccion/${ordenId}/cancelar`, {
+        method: 'POST',
+      })
+
+      if (!res.ok) {
+        throw new Error('No se pudo cancelar la orden')
+      }
+
+      const updated = await fetch(`${API_BASE_URL}/ordenes-produccion`)
+      if (!updated.ok) {
+        throw new Error('No se pudo recargar la orden')
+      }
+
+      const data = await updated.json()
+      const refreshed = Array.isArray(data) ? data : []
+      setOrdenes((prev) => prev.map((orden) => refreshed.find((item) => item.id === orden.id) || orden))
+      const nextDetalle = refreshed.find((item) => item.id === ordenId)
+      setDetalleOrden((prev) => (prev?.id === ordenId ? { ...prev, ...nextDetalle } : prev))
+      await cargarOrdenes()
+    } catch (err) {
+      console.error(err)
+      setError('No se pudo cancelar la orden')
+    }
   }
 
   return (
@@ -440,6 +501,11 @@ export default function ReportesProduccion() {
                 <Typography variant="subtitle2">
                   Cantidad planeada: {getCantidadPlaneada(detalleOrden)}
                 </Typography>
+                {isOrdenCancelada(detalleOrden) && (
+                  <Typography variant="subtitle2" color="error.main" sx={{ fontWeight: 700 }}>
+                    Orden cancelada: bloqueada para produccion
+                  </Typography>
+                )}
               </Stack>
 
               <Divider sx={{ mb: 2 }} />
@@ -490,6 +556,24 @@ export default function ReportesProduccion() {
           )}
         </DialogContent>
         <DialogActions>
+          {!isOrdenCancelada(detalleOrden) && detalleOrden?.id && (
+            <Button
+              color="warning"
+              startIcon={<BlockIcon />}
+              onClick={() => handleCancelarOrden(detalleOrden.id)}
+            >
+              Cancelar
+            </Button>
+          )}
+          {canDeleteOrden && detalleOrden?.id && (
+            <Button
+              color="error"
+              startIcon={<DeleteIcon />}
+              onClick={() => handleEliminarOrden(detalleOrden.id)}
+            >
+              Eliminar
+            </Button>
+          )}
           <Button onClick={handleCloseDetalle}>Cerrar</Button>
         </DialogActions>
       </Dialog>

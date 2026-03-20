@@ -24,6 +24,7 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import VisibilityIcon from '@mui/icons-material/Visibility'
+import BlockIcon from '@mui/icons-material/Block'
 import { API_BASE_URL } from '../config/api'
 import { useAuth } from '../context/AuthContext'
 
@@ -43,6 +44,8 @@ const ordenarProcesos = (procesos) =>
   procesos
     .slice()
     .sort((a, b) => (a?.orden ?? 0) - (b?.orden ?? 0))
+
+const isOrdenCancelada = (orden) => String(orden?.estado || '').toUpperCase() === 'CANCELADA'
 
   const getProcesoNombre = (proceso, procesosById) =>
   procesosById[String(proceso?.proceso_id ?? proceso?.procesoId ?? '')]?.nombre ??
@@ -310,6 +313,47 @@ export default function Produccion() {
     }
   }
 
+  const handleCancelarOrden = async (ordenId) => {
+    if (!ordenId) return
+    const ok = window.confirm('¿Cancelar esta orden de producción? Se bloqueará y solo podrá eliminarse.')
+    if (!ok) return
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/ordenes-produccion/${ordenId}/cancelar`, {
+        method: 'POST',
+      })
+
+      if (!res.ok) {
+        const txt = await res.text()
+        let msg = 'No se pudo cancelar la orden'
+        try {
+          const parsed = JSON.parse(txt)
+          msg = parsed.error || parsed.message || msg
+        } catch (_) {
+          // noop
+        }
+        setSnack({ open: true, msg, severity: 'error' })
+        return
+      }
+
+      if (selectedOrdenId === ordenId) {
+        setOpenDetalle(false)
+        setSelectedOrdenId(null)
+        setDetalleOrden(null)
+      }
+
+      setSnack({ open: true, msg: 'Orden cancelada', severity: 'success' })
+      await cargarOrdenes()
+    } catch (err) {
+      console.error(err)
+      setSnack({
+        open: true,
+        msg: 'Error de red al cancelar orden',
+        severity: 'error',
+      })
+    }
+  }
+
   const handleAccionProceso = async (
     procesoOrdenId,
     accion,
@@ -497,12 +541,22 @@ export default function Produccion() {
                 .filter((orden) => orden?.estado !== 'COMPLETADA')
                 .map((orden) => {
                 const procesosOrdenados = ordenarProcesos(orden?.procesos || [])
+                const ordenCancelada = isOrdenCancelada(orden)
                 const producto =
                   orden?.producto ||
                   productosById[String(orden?.producto_id ?? orden?.productoId ?? '')]
                 const productoNombre = getProductoNombre({ ...orden, producto })
                 return (
-                  <Paper key={orden.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                  <Paper
+                    key={orden.id}
+                    variant="outlined"
+                    sx={{
+                      p: 2,
+                      borderRadius: 2,
+                      opacity: ordenCancelada ? 0.72 : 1,
+                      bgcolor: ordenCancelada ? 'action.hover' : 'background.paper',
+                    }}
+                  >
                     <Stack
                       direction={{ xs: 'column', sm: 'row' }}
                       justifyContent="space-between"
@@ -517,15 +571,32 @@ export default function Produccion() {
                         <Typography variant="body2" color="text.secondary">
                           Producto: {productoNombre}
                         </Typography>
+                        {ordenCancelada && (
+                          <Typography variant="body2" color="error.main" sx={{ fontWeight: 600 }}>
+                            Orden cancelada: bloqueada para produccion
+                          </Typography>
+                        )}
                       </Stack>
                       <Stack direction="row" spacing={1} alignItems="center">
-                        <Button
-                          size="small"
-                          startIcon={<VisibilityIcon />}
-                          onClick={() => handleSelectOrden(orden)}
-                        >
-                          Ver detalle
-                        </Button>
+                        {!ordenCancelada && (
+                          <>
+                            <Button
+                              size="small"
+                              startIcon={<VisibilityIcon />}
+                              onClick={() => handleSelectOrden(orden)}
+                            >
+                              Ver detalle
+                            </Button>
+                            <Button
+                              size="small"
+                              color="warning"
+                              startIcon={<BlockIcon />}
+                              onClick={() => handleCancelarOrden(orden.id)}
+                            >
+                              Cancelar
+                            </Button>
+                          </>
+                        )}
                         {canDeleteOrden && (
                           <Button
                             size="small"
