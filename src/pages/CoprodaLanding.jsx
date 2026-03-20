@@ -56,17 +56,18 @@ const heroArt =
 `)
 
 const featuredSets = [
-  { title: 'Producto 01', copy: 'Descripcion breve del producto para reemplazar despues.', image: catalogo1 },
-  { title: 'Producto 02', copy: 'Descripcion breve del producto para reemplazar despues.', image: catalogo2 },
-  { title: 'Producto 03', copy: 'Descripcion breve del producto para reemplazar despues.', image: catalogo3 },
-  { title: 'Producto 04', copy: 'Descripcion breve del producto para reemplazar despues.', image: catalogo4 },
-  { title: 'Producto 05', copy: 'Descripcion breve del producto para reemplazar despues.', image: catalogo5 },
-  { title: 'Producto 06', copy: 'Descripcion breve del producto para reemplazar despues.', image: catalogo6 },
-  { title: 'Producto 07', copy: 'Descripcion breve del producto para reemplazar despues.', image: catalogo7 },
-  { title: 'Producto 08', copy: 'Descripcion breve del producto para reemplazar despues.', image: catalogo8 },
+  { title: 'Vajilla Orquidea', copy: '7 Piezas', image: catalogo1 },
+  { title: 'Vajilla Orquidea', copy: '10 Piezas', image: catalogo2 },
+  // { title: 'Producto 02', copy: '', image: catalogo2 },
+  { title: 'Vajilla Cónica', copy: '3 Piezas', image: catalogo3 },
+  { title: 'Vajilla Monja Blanca', copy: '3 Piezas', image: catalogo4 },
+  { title: 'Combo de Tinas', copy: '3 Piezas', image: catalogo5 },
+  { title: 'Vajilla Restaurante', copy: '4 Piezas', image: catalogo6 },
+  { title: 'Vajilla Restaurante', copy: '3 Piezas', image: catalogo7 },
+  { title: 'Vajilla Restaurante', copy: '3 Piezas', image: catalogo8 },
 ]
 
-const servicios = ['Diseno personalizado', 'Mejora de rendimiento', 'Adaptacion de piezas', 'Alto volumen']
+const servicios = ['Producto %100 Fabricado en Guatemala', 'Excelente Calidad que perdura']
 
 const highlights = [
   {
@@ -437,7 +438,7 @@ export default function CoprodaLanding() {
                     COMPANIA PROCESADORA DE ALUMINIO
                   </Typography>
                   <Typography variant="h1" sx={{ fontSize: { xs: 34, sm: 40, md: 72 }, lineHeight: 1.02 }}>
-                    Aluminio con diseno, durabilidad y presencia.
+                    Aluminio de calidad que perdura.
                   </Typography>
                   <Typography variant="h6" sx={{ color: '#4b5563', maxWidth: 520, fontSize: { xs: 18, md: 21 } }}>
                     Fabricamos utensilios de cocina de aluminio con procesos de calidad para hogares y negocios.
@@ -634,7 +635,7 @@ export default function CoprodaLanding() {
                     Capacidades de produccion
                   </Typography>
                   <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.75)', mb: 3 }}>
-                    Capacidad para fabricar diversidad de disenos y atender necesidades especificas del mercado.
+                    Estamos preparados para atender necesidades especificas del mercado.
                   </Typography>
                   <Stack spacing={2}>
                     {servicios.map((item) => (
@@ -666,7 +667,7 @@ export default function CoprodaLanding() {
                       <Stack direction="row" spacing={2} alignItems="center">
                         <VerifiedOutlinedIcon sx={{ color: '#ef4444' }} />
                         <Typography variant="body2">
-                          Disenar y fabricar utensilios con variedad de formas y aplicaciones.
+                          Fabricar Utensilios de Aluminio.
                         </Typography>
                       </Stack>
                       <Stack direction="row" spacing={2} alignItems="center">
@@ -678,7 +679,7 @@ export default function CoprodaLanding() {
                       <Stack direction="row" spacing={2} alignItems="center">
                         <VerifiedOutlinedIcon sx={{ color: '#ef4444' }} />
                         <Typography variant="body2">
-                          Apoyo de diseno para adaptar o desarrollar piezas personalizadas.
+                          Diversidad de productos que se adapten a sus necesidades.
                         </Typography>
                       </Stack>
                     </Stack>
@@ -700,12 +701,12 @@ export default function CoprodaLanding() {
                     Contacto
                   </Typography>
                   <Typography variant="body1" sx={{ color: '#4b5563', mb: 3 }}>
-                    Visitanos o escribenos para solicitudes de catalogo, precios y distribucion.
+                    Escribenos para solicitudes de catalogo, precios y distribucion.
                   </Typography>
                   <Stack spacing={2}>
                     <Stack
                       component="a"
-                      href="tel:+50224489079"
+                      href="tel:+50243912511"
                       direction="row"
                       spacing={2}
                       alignItems="center"
@@ -716,7 +717,7 @@ export default function CoprodaLanding() {
                       }}
                     >
                       <PhoneInTalkIcon sx={{ color: '#ef4444' }} />
-                      <Typography variant="body1">+502 2448-9079</Typography>
+                      <Typography variant="body1">+502 4391-2511</Typography>
                     </Stack>
                     <Stack direction="row" spacing={2} alignItems="center">
                       <MailOutlineIcon sx={{ color: '#ef4444' }} />
@@ -725,7 +726,7 @@ export default function CoprodaLanding() {
                     <Stack direction="row" spacing={2} alignItems="center">
                       <PlaceOutlinedIcon sx={{ color: '#ef4444', mt: { xs: 0.5, md: 0 } }} />
                       <Typography variant="body1" sx={{ fontSize: { xs: 15, md: 16 } }}>
-                        4a Avenida 3-19, Zona 1, Boca del Monte, Guatemala
+                        KM 33 Carretera a El Salvador, Proyecto Industrial el Alto, Bodega No. 2, Guatemala
                       </Typography>
                     </Stack>
                   </Stack>
@@ -756,7 +757,7 @@ export default function CoprodaLanding() {
                           CONTACTANOS
                         </Typography>
                         <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.5 }}>
-                          Hablemos de tu siguiente pedido
+                          Hablemos sobre su siguiente pedido
                         </Typography>
                       </Box>
 
