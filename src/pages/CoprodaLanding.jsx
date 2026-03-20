@@ -252,10 +252,56 @@ export default function CoprodaLanding() {
         }}
       >
         <Container maxWidth="xl" sx={{ py: { xs: 1, md: 1.5 }, px: { xs: 2, sm: 3 } }}>
-          <Stack spacing={{ xs: 1.25, md: 2 }}>
+          <Stack spacing={{ xs: 1.25, md: 0 }}>
             <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
-              <Stack direction="row" spacing={2} alignItems="center" sx={{ flex: 1, justifyContent: { xs: 'flex-start', md: 'flex-start' } }}>
+              <Stack direction="row" spacing={2} alignItems="center" sx={{ flex: 1, justifyContent: 'flex-start' }}>
                 <Box component="img" src={logoCoproda} alt="Coproda" sx={{ height: { xs: 40, md: 48 } }} />
+              </Stack>
+              <Stack
+                direction="row"
+                spacing={2}
+                alignItems="center"
+                useFlexGap
+                flexWrap="wrap"
+                justifyContent="flex-end"
+                sx={{ display: { xs: 'none', md: 'flex' } }}
+              >
+                {navItems.map((item) => (
+                  <Button
+                    key={item.label}
+                    href={item.href}
+                    onClick={scrollToSection(item.href)}
+                    sx={{
+                      color: '#1f2937',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      fontSize: { xs: 11, md: 12 },
+                      minWidth: 'auto',
+                      px: { xs: 1, md: 1.5 },
+                      py: { xs: 0.5, md: 0.75 },
+                      letterSpacing: { xs: '0.08em', md: '0.12em' },
+                      '&:hover': { color: '#ef4444' },
+                    }}
+                  >
+                    {item.label}
+                  </Button>
+                ))}
+                <Button
+                  variant="contained"
+                  href="#contacto"
+                  onClick={scrollToSection('#contacto')}
+                  sx={{
+                    bgcolor: '#111827',
+                    color: 'white',
+                    textTransform: 'none',
+                    borderRadius: 999,
+                    px: { xs: 2, md: 3 },
+                    py: { xs: 0.7, md: 0.9 },
+                    '&:hover': { bgcolor: '#1f2937' },
+                  }}
+                >
+                  Cotizar
+                </Button>
               </Stack>
               <IconButton
                 onClick={() => setMobileMenuOpen((prev) => !prev)}
@@ -268,53 +314,6 @@ export default function CoprodaLanding() {
               >
                 {mobileMenuOpen ? <CloseRoundedIcon /> : <MenuRoundedIcon />}
               </IconButton>
-            </Stack>
-
-            <Stack
-              direction="row"
-              spacing={{ xs: 0.75, md: 2 }}
-              alignItems="center"
-              useFlexGap
-              flexWrap="wrap"
-              justifyContent="center"
-              sx={{ display: { xs: 'none', md: 'flex' } }}
-            >
-              {navItems.map((item) => (
-                <Button
-                  key={item.label}
-                  href={item.href}
-                  onClick={scrollToSection(item.href)}
-                  sx={{
-                    color: '#1f2937',
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    fontSize: { xs: 11, md: 12 },
-                    minWidth: 'auto',
-                    px: { xs: 1, md: 1.5 },
-                    py: { xs: 0.5, md: 0.75 },
-                    letterSpacing: { xs: '0.08em', md: '0.12em' },
-                    '&:hover': { color: '#ef4444' },
-                  }}
-                >
-                  {item.label}
-                </Button>
-              ))}
-              <Button
-                variant="contained"
-                href="#contacto"
-                onClick={scrollToSection('#contacto')}
-                sx={{
-                  bgcolor: '#111827',
-                  color: 'white',
-                  textTransform: 'none',
-                  borderRadius: 999,
-                  px: { xs: 2, md: 3 },
-                  py: { xs: 0.7, md: 0.9 },
-                  '&:hover': { bgcolor: '#1f2937' },
-                }}
-              >
-                Cotizar
-              </Button>
             </Stack>
 
             <Collapse in={mobileMenuOpen} timeout={280} sx={{ display: { xs: 'block', md: 'none' } }}>
