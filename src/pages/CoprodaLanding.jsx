@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { Link as RouterLink } from 'react-router-dom'
 import {
   Box,
   Button,
@@ -22,6 +23,7 @@ import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined
 import VerifiedOutlinedIcon from '@mui/icons-material/VerifiedOutlined'
 import DesignServicesOutlinedIcon from '@mui/icons-material/DesignServicesOutlined'
 import WhatsAppIcon from '@mui/icons-material/WhatsApp'
+import FacebookRoundedIcon from '@mui/icons-material/FacebookRounded'
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded'
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import logoCoproda from '../assets/logocoprodahome2.png'
@@ -286,6 +288,7 @@ export default function CoprodaLanding() {
                     {item.label}
                   </Button>
                 ))}
+                
                 <Button
                   variant="contained"
                   href="#contacto"
@@ -301,6 +304,25 @@ export default function CoprodaLanding() {
                   }}
                 >
                   Cotizar
+                </Button>
+                <Button
+                  component={RouterLink}
+                  to="/signin"
+                  variant="outlined"
+                  sx={{
+                    borderColor: '#d1d5db',
+                    color: '#111827',
+                    textTransform: 'none',
+                    borderRadius: 999,
+                    px: 2.25,
+                    py: 0.9,
+                    '&:hover': {
+                      borderColor: '#111827',
+                      bgcolor: 'rgba(17,24,39,0.04)',
+                    },
+                  }}
+                >
+                  Acceso
                 </Button>
               </Stack>
               <IconButton
@@ -345,6 +367,7 @@ export default function CoprodaLanding() {
                     {item.label}
                   </Button>
                 ))}
+                
                 <Button
                   variant="contained"
                   href="#contacto"
@@ -361,6 +384,26 @@ export default function CoprodaLanding() {
                   }}
                 >
                   Cotizar
+                </Button>
+                <Button
+                  component={RouterLink}
+                  to="/signin"
+                  variant="outlined"
+                  sx={{
+                    justifyContent: 'flex-start',
+                    borderColor: '#d1d5db',
+                    color: '#111827',
+                    textTransform: 'none',
+                    borderRadius: 999,
+                    px: 2,
+                    py: 1,
+                    '&:hover': {
+                      borderColor: '#111827',
+                      bgcolor: 'rgba(17,24,39,0.04)',
+                    },
+                  }}
+                >
+                  Acceso
                 </Button>
               </Stack>
             </Collapse>
@@ -660,9 +703,20 @@ export default function CoprodaLanding() {
                     Visitanos o escribenos para solicitudes de catalogo, precios y distribucion.
                   </Typography>
                   <Stack spacing={2}>
-                    <Stack direction="row" spacing={2} alignItems="center">
+                    <Stack
+                      component="a"
+                      href="tel:+50224489079"
+                      direction="row"
+                      spacing={2}
+                      alignItems="center"
+                      sx={{
+                        color: 'inherit',
+                        textDecoration: 'none',
+                        width: 'fit-content',
+                      }}
+                    >
                       <PhoneInTalkIcon sx={{ color: '#ef4444' }} />
-                      <Typography variant="body1">(502) 2448-9079</Typography>
+                      <Typography variant="body1">+502 2448-9079</Typography>
                     </Stack>
                     <Stack direction="row" spacing={2} alignItems="center">
                       <MailOutlineIcon sx={{ color: '#ef4444' }} />
@@ -689,32 +743,70 @@ export default function CoprodaLanding() {
                   }}
                 >
                   <CardContent>
-                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-                      Listos para tu proyecto
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.75)', mb: 3 }}>
-                      Solicita catalogos, precios y opciones de distribucion con nuestro equipo.
-                    </Typography>
-                    <Button
-                      component="a"
-                      href="https://wa.me/message/77O5L2IJLWD4P1"
-                      target="_blank"
-                      rel="noreferrer"
-                      startIcon={<WhatsAppIcon />}
-                      sx={{
-                        mt: 1.5,
-                        bgcolor: '#25D366',
-                        color: 'white',
-                        textTransform: 'none',
-                        borderRadius: 999,
-                        px: 3,
-                        py: 1.2,
-                        width: { xs: '100%', sm: 'auto' },
-                        '&:hover': { bgcolor: '#1ebe5d' },
-                      }}
-                    >
-                      Escribir por WhatsApp
-                    </Button>
+                    <Stack spacing={2.5}>
+                      {/* <Box
+                        component="img"
+                        src={logoCoproda}
+                        alt="Coproda"
+                        sx={{ height: 44, width: 'auto', alignSelf: 'flex-start' }}
+                      /> */}
+
+                      <Box>
+                        <Typography variant="overline" sx={{ color: 'rgba(255,255,255,0.6)', letterSpacing: '0.18em' }}>
+                          CONTACTANOS
+                        </Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.5 }}>
+                          Hablemos de tu siguiente pedido
+                        </Typography>
+                      </Box>
+
+                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.75)' }}>
+                        Escribenos por nuestros canales directos y conoce novedades, catalogos y opciones de compra.
+                      </Typography>
+
+                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+                        <Button
+                          component="a"
+                          href="https://wa.me/message/77O5L2IJLWD4P1"
+                          target="_blank"
+                          rel="noreferrer"
+                          startIcon={<WhatsAppIcon />}
+                          sx={{
+                            bgcolor: '#25D366',
+                            color: 'white',
+                            textTransform: 'none',
+                            borderRadius: 999,
+                            px: 3,
+                            py: 1.2,
+                            width: { xs: '100%', sm: 'auto' },
+                            '&:hover': { bgcolor: '#1ebe5d' },
+                          }}
+                        >
+                          Escribir por WhatsApp
+                        </Button>
+
+                        <Button
+                          component="a"
+                          href="https://www.facebook.com/CoprodaGuatemala/"
+                          target="_blank"
+                          rel="noreferrer"
+                          startIcon={<FacebookRoundedIcon />}
+                          sx={{
+                            bgcolor: '#1877F2',
+                            color: 'white',
+                            textTransform: 'none',
+                            borderRadius: 999,
+                            px: 3,
+                            py: 1.2,
+                            width: { xs: '100%', sm: 'auto' },
+                            '&:hover': { bgcolor: '#1664cc' },
+                          }}
+                        >
+                          Siguenos en Facebook
+                        </Button>
+                      </Stack>
+
+                    </Stack>
                   </CardContent>
                 </Card>
               </ScrollReveal>
