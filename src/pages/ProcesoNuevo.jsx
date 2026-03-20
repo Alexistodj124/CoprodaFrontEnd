@@ -69,7 +69,7 @@ export default function ProcesoNuevo() {
 
       setSnack({ open: true, msg: 'Proceso creado', severity: 'success' })
       setForm(initialForm)
-      navigate('/produccion-procesos?tipo=producto')
+      navigate('/COPRODA/produccion-procesos?tipo=producto')
     } catch (err) {
       console.error(err)
       setSnack({ open: true, msg: 'Error de red al crear proceso', severity: 'error' })
@@ -91,7 +91,7 @@ export default function ProcesoNuevo() {
             <Typography variant="h5" sx={{ fontWeight: 600 }}>
               Nuevo proceso
             </Typography>
-            <Button variant="outlined" onClick={() => navigate('/produccion-dashboard')}>
+            <Button variant="outlined" onClick={() => navigate('/COPRODA/produccion-dashboard')}>
               Volver al panel
             </Button>
           </Stack>

@@ -15,7 +15,7 @@ export default function AppLayout() {
 
   const handleLogout = () => {
     logout()                               // limpia contexto + localStorage
-    navigate('/signin', { replace: true }) // manda al login
+    navigate('/COPRODA/signin', { replace: true }) // manda al login
   }
 
   const canAccess = (permiso) => hasAnyPermiso([permiso])
@@ -38,61 +38,61 @@ export default function AppLayout() {
           {/* Navegación solo si está logueado */}
           {user && (
             <>
-              <Button color="inherit" component={RouterLink} to="/">
+              <Button color="inherit" component={RouterLink} to="/COPRODA">
                 Inicio
               </Button>
               {canAccess('Compras') || canAccess('Productos') ? (
-                <Button color="inherit" component={RouterLink} to="/compras">
+                <Button color="inherit" component={RouterLink} to="/COPRODA/compras">
                   Productos
                 </Button>
               ) : null}
               {canAccess('Ventas') ? (
-                <Button color="inherit" component={RouterLink} to="/ventas">
+                <Button color="inherit" component={RouterLink} to="/COPRODA/ventas">
                   Ventas
                 </Button>
               ) : null}
               {canAccess('Pedidos') ? (
-                <Button color="inherit" component={RouterLink} to="/pedidos">
+                <Button color="inherit" component={RouterLink} to="/COPRODA/pedidos">
                   Pedidos
                 </Button>
               ) : null}
               {!canAccess('maestro') && (canAccess('Produccion') || canAccess('Ventas')) ? (
-                <Button color="inherit" component={RouterLink} to="/ordenes">
+                <Button color="inherit" component={RouterLink} to="/COPRODA/ordenes">
                   Ordenes
                 </Button>
               ) : null}
               {canAccess('Produccion') ? (
-                <Button color="inherit" component={RouterLink} to="/produccion-dashboard">
+                <Button color="inherit" component={RouterLink} to="/COPRODA/produccion-dashboard">
                   Producción
                 </Button>
               ) : null}
               {canAccess('Bodega') ? (
-                <Button color="inherit" component={RouterLink} to="/bodega">
+                <Button color="inherit" component={RouterLink} to="/COPRODA/bodega">
                   Bodega
                 </Button>
               ) : null}
               {canAccess('Clientes') || canAccess('ClientesVentas') || canAccess('ClientesFinanzas') ? (
-                <Button color="inherit" component={RouterLink} to="/clientes">
+                <Button color="inherit" component={RouterLink} to="/COPRODA/clientes">
                   Clientes
                 </Button>
               ) : null}
               {canAccess('Abonos') ? (
-                <Button color="inherit" component={RouterLink} to="/abonos">
+                <Button color="inherit" component={RouterLink} to="/COPRODA/abonos">
                   Abonos
                 </Button>
               ) : null}
               {canAccess('Bancos') ? (
-                <Button color="inherit" component={RouterLink} to="/bancos">
+                <Button color="inherit" component={RouterLink} to="/COPRODA/bancos">
                   Bancos
                 </Button>
               ) : null}
               {canAccess('Reportes') ? (
-                <Button color="inherit" component={RouterLink} to="/reportes">
+                <Button color="inherit" component={RouterLink} to="/COPRODA/reportes">
                   Reportes
                 </Button>
               ) : null}
               {canAccess('maestro') ? (
-                <Button color="inherit" component={RouterLink} to="/stocks">
+                <Button color="inherit" component={RouterLink} to="/COPRODA/stocks">
                   Stocks
                 </Button>
               ) : null}

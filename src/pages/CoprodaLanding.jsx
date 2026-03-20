@@ -307,7 +307,7 @@ export default function CoprodaLanding() {
                 </Button>
                 <Button
                   component={RouterLink}
-                  to="/signin"
+                  to="/COPRODA/signin"
                   variant="outlined"
                   sx={{
                     borderColor: '#d1d5db',
@@ -387,7 +387,7 @@ export default function CoprodaLanding() {
                 </Button>
                 <Button
                   component={RouterLink}
-                  to="/signin"
+                  to="/COPRODA/signin"
                   variant="outlined"
                   sx={{
                     justifyContent: 'flex-start',

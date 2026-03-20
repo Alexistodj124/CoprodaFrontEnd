@@ -23,7 +23,7 @@ export default function SignIn() {
       setError('')
       const user = await login(username, password)
       // si quieres, puedes mandar a ventas o a home:
-      navigate('/', { replace: true })
+      navigate('/COPRODA', { replace: true })
     } catch (err) {
       console.error(err)
       setError('Usuario o contraseña incorrectos')

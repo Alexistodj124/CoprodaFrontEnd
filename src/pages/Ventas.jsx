@@ -405,7 +405,7 @@ export default function Inventory() {
 
   const handleOpenEditProducto = (producto) => {
     if (!producto) return
-    navigate('/compras', { state: { editProductoId: producto.id, producto } })
+    navigate('/COPRODA/compras', { state: { editProductoId: producto.id, producto } })
   }
 
   const validate = () => {

@@ -14,23 +14,23 @@ import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturi
 import { useAuth } from '../context/AuthContext'
 
 const modules = [
-  { to: '/ventas', permiso: 'Ventas', title: 'Ventas', icon: PointOfSaleIcon, subtitle: 'Módulo de ventas y pedidos rápidos' },
-  { to: '/reportes', permiso: 'Reportes', title: 'Reportes', icon: AreaChartIcon, subtitle: 'Reportes de ventas y desempeño' },
-  { to: '/compras', permiso: 'Compras', altPermisos: ['Productos'], title: 'Compras', icon: ProductionQuantityLimitsIcon, subtitle: 'Compra y carga de productos' },
-  { to: '/pedidos', permiso: 'Pedidos', title: 'Pedidos', icon: AssignmentIcon, subtitle: 'Órdenes generadas y detalle' },
-  { to: '/produccion-dashboard', permiso: 'Produccion', title: 'Producción', icon: PrecisionManufacturingIcon, subtitle: 'Panel de producción y accesos rápidos' },
-  { to: '/bodega', permiso: 'Bodega', title: 'Bodega', icon: WarehouseIcon, subtitle: 'Inventario y stock' },
-  { to: '/clientes', permiso: 'Clientes', altPermisos: ['ClientesVentas', 'ClientesFinanzas'], title: 'Clientes', icon: PortraitIcon, subtitle: 'Historial y abonos por cliente' },
-  { to: '/abonos', permiso: 'Abonos', title: 'Abonos', icon: PaymentsIcon, subtitle: 'Abonos aplicados por cliente' },
-  { to: '/bancos', permiso: 'Bancos', title: 'Bancos', icon: AccountBalanceIcon, subtitle: 'Pagos sin asignar' },
-  { to: '/stocks', permiso: 'maestro', title: 'Stocks', icon: InventoryIcon, subtitle: 'Stocks de productos y materias primas' },
-  { to: '/', title: 'Inicio', icon: InventoryIcon, subtitle: 'Volver al panel principal' },
+  { to: '/COPRODA/ventas', permiso: 'Ventas', title: 'Ventas', icon: PointOfSaleIcon, subtitle: 'Módulo de ventas y pedidos rápidos' },
+  { to: '/COPRODA/reportes', permiso: 'Reportes', title: 'Reportes', icon: AreaChartIcon, subtitle: 'Reportes de ventas y desempeño' },
+  { to: '/COPRODA/compras', permiso: 'Compras', altPermisos: ['Productos'], title: 'Compras', icon: ProductionQuantityLimitsIcon, subtitle: 'Compra y carga de productos' },
+  { to: '/COPRODA/pedidos', permiso: 'Pedidos', title: 'Pedidos', icon: AssignmentIcon, subtitle: 'Órdenes generadas y detalle' },
+  { to: '/COPRODA/produccion-dashboard', permiso: 'Produccion', title: 'Producción', icon: PrecisionManufacturingIcon, subtitle: 'Panel de producción y accesos rápidos' },
+  { to: '/COPRODA/bodega', permiso: 'Bodega', title: 'Bodega', icon: WarehouseIcon, subtitle: 'Inventario y stock' },
+  { to: '/COPRODA/clientes', permiso: 'Clientes', altPermisos: ['ClientesVentas', 'ClientesFinanzas'], title: 'Clientes', icon: PortraitIcon, subtitle: 'Historial y abonos por cliente' },
+  { to: '/COPRODA/abonos', permiso: 'Abonos', title: 'Abonos', icon: PaymentsIcon, subtitle: 'Abonos aplicados por cliente' },
+  { to: '/COPRODA/bancos', permiso: 'Bancos', title: 'Bancos', icon: AccountBalanceIcon, subtitle: 'Pagos sin asignar' },
+  { to: '/COPRODA/stocks', permiso: 'maestro', title: 'Stocks', icon: InventoryIcon, subtitle: 'Stocks de productos y materias primas' },
+  { to: '/COPRODA', title: 'Inicio', icon: InventoryIcon, subtitle: 'Volver al panel principal' },
 ]
 
 export default function Home() {
   const { hasAnyPermiso } = useAuth()
   const visibleModules = modules.filter((m) => {
-    if (m.to === '/') return true
+    if (m.to === '/COPRODA') return true
     if (!m.permiso && (!m.altPermisos || m.altPermisos.length === 0)) return true
     const permisos = m.altPermisos ? [m.permiso, ...m.altPermisos] : [m.permiso]
     return hasAnyPermiso(permisos.filter(Boolean))

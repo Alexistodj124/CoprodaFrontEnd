@@ -14,7 +14,7 @@ import { useAuth } from '../context/AuthContext'
 
 const modules = [
   {
-    to: '/ordenes',
+    to: '/COPRODA/ordenes',
     permiso: 'Produccion',
     altPermisos: ['Ventas'],
     title: 'Ordenes',
@@ -22,14 +22,14 @@ const modules = [
     subtitle: 'Órdenes y seguimiento de producción',
   },
   {
-    to: '/produccion',
+    to: '/COPRODA/produccion',
     permiso: 'Produccion',
     title: 'Producción',
     icon: PrecisionManufacturingIcon,
     subtitle: 'Crear y gestionar órdenes de producción',
   },
   {
-    to: '/produccion-procesos?tipo=producto',
+    to: '/COPRODA/produccion-procesos?tipo=producto',
     permiso: 'Compras',
     altPermisos: ['Productos'],
     title: 'Agregar Producto',
@@ -37,7 +37,7 @@ const modules = [
     subtitle: 'Asignar procesos y componentes',
   },
   {
-    to: '/produccion-procesos?tipo=componente',
+    to: '/COPRODA/produccion-procesos?tipo=componente',
     permiso: 'Compras',
     altPermisos: ['Productos'],
     title: 'Agregar Componente',
@@ -45,35 +45,35 @@ const modules = [
     subtitle: 'Asignar procesos a componentes',
   },
   {
-    to: '/procesos/nuevo',
+    to: '/COPRODA/procesos/nuevo',
     permiso: 'Produccion',
     title: 'Nuevo Proceso',
     icon: PlaylistAddIcon,
     subtitle: 'Crear un proceso del catálogo',
   },
   {
-    to: '/reportes-produccion',
+    to: '/COPRODA/reportes-produccion',
     permiso: 'Produccion',
     title: 'Reportes Producción',
     icon: AssessmentIcon,
     subtitle: 'Resumen de órdenes y procesos',
   },
   {
-    to: '/stocks?tab=materias',
+    to: '/COPRODA/stocks?tab=materias',
     permiso: 'maestro',
     title: 'Stocks Materia Prima',
     icon: ScienceIcon,
     subtitle: 'Stock de materias primas',
   },
   {
-    to: '/materias-primas/nueva',
+    to: '/COPRODA/materias-primas/nueva',
     permiso: 'Produccion',
     title: 'Materia Prima',
     icon: AddCircleOutlineIcon,
     subtitle: 'Crear una nueva materia prima',
   },
   {
-    to: '/stocks?tab=componentes',
+    to: '/COPRODA/stocks?tab=componentes',
     permiso: 'maestro',
     title: 'Stocks Componentes',
     icon: Inventory2Icon,

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 import AppLayout from './ui/AppLayout.jsx'
 import Home from './pages/Home.jsx'
 import SignIn from './pages/SignIn.jsx'
@@ -26,10 +26,19 @@ import { RequireAuth, RequirePermiso } from './ProtectedRoutes.jsx'
 const router = createBrowserRouter(
   [
     {
-      path: 'coproda',
+      path: '/',
       element: <CoprodaLanding />,
     },
     {
+      path: '/coproda',
+      element: <Navigate to="/" replace />,
+    },
+    {
+      path: '/coproda/*',
+      element: <Navigate to="/" replace />,
+    },
+    {
+      path: '/COPRODA',
       element: <AppLayout />,
       children: [
         {
@@ -169,13 +178,10 @@ const router = createBrowserRouter(
             </RequirePermiso>
           ),
         },
-        { path: '*', element: <NotFound /> },
       ],
     },
+    { path: '*', element: <NotFound /> },
   ],
-  {
-    basename: '/COPRODA',
-  }
 )
 
 export default router

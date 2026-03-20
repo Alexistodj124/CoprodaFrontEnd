@@ -10,7 +10,7 @@ export function RequireAuth({ children }) {
 
   if (!user) {
     // si no hay usuario -> manda a /signin
-    return <Navigate to="/signin" state={{ from: location }} replace />
+    return <Navigate to="/COPRODA/signin" state={{ from: location }} replace />
   }
 
   return children
@@ -22,7 +22,7 @@ export function RequirePermiso({ children, permisos = [], permiso }) {
   const location = useLocation()
 
   if (!user) {
-    return <Navigate to="/signin" state={{ from: location }} replace />
+    return <Navigate to="/COPRODA/signin" state={{ from: location }} replace />
   }
 
   if (!permisosReady) {
@@ -32,7 +32,7 @@ export function RequirePermiso({ children, permisos = [], permiso }) {
   const required = permisos.length ? permisos : permiso ? [permiso] : []
   if (required.length > 0 && !hasAnyPermiso(required)) {
     // logueado pero sin permiso -> lo mandamos al home
-    return <Navigate to="/" replace />
+    return <Navigate to="/COPRODA" replace />
   }
 
   return children
