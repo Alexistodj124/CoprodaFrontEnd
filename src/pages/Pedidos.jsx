@@ -4,7 +4,7 @@ import {
   TableHead, TableRow, Dialog, DialogTitle, DialogContent, DialogActions, Button, Chip, MenuItem, InputAdornment, IconButton
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
-import { DateRangePicker } from '@mui/x-date-pickers-pro/DateRangePicker'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import dayjs from 'dayjs'
@@ -519,17 +519,17 @@ export default function Reportes() {
             spacing={2}
             alignItems="center"
           >
-            <DateRangePicker
-              calendars={2}
-              value={range}
-              onChange={(newVal) => setRange(newVal)}
-              slotProps={{
-                textField: {
-                  size: 'small',
-                  fullWidth: true,
-                },
-              }}
-              localeText={{ start: 'Desde', end: 'Hasta' }}
+            <DatePicker
+              label="Desde"
+              value={range[0]}
+              onChange={(newVal) => setRange([newVal, range[1]])}
+              slotProps={{ textField: { size: 'small', fullWidth: true } }}
+            />
+            <DatePicker
+              label="Hasta"
+              value={range[1]}
+              onChange={(newVal) => setRange([range[0], newVal])}
+              slotProps={{ textField: { size: 'small', fullWidth: true } }}
             />
 
             <Chip

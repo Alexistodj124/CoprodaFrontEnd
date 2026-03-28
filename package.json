@@ -16,7 +16,6 @@
     "@mui/icons-material": "^7.3.5",
     "@mui/material": "^7.3.5",
     "@mui/x-date-pickers": "^8.17.0",
-    "@mui/x-date-pickers-pro": "^8.17.0",
     "dayjs": "^1.11.19",
     "numero-a-letras": "^1.0.6",
     "react": "^19.2.0",
