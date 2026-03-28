@@ -71,10 +71,8 @@ export default function Pedidos2() {
   const [productosById, setProductosById] = React.useState({})
   const [clientesById, setClientesById] = React.useState({})
   const [estadosOrden, setEstadosOrden] = React.useState([])
-  const [range, setRange] = React.useState([
-    dayjs().startOf('month'),
-    dayjs().endOf('day'),
-  ])
+  const [rangeFrom, setRangeFrom] = React.useState(dayjs().startOf('month'))
+  const [rangeTo, setRangeTo] = React.useState(dayjs().endOf('day'))
 
   const filtered = React.useMemo(() => {
     const canSeeAll = isAdmin || hasAnyPermiso(['Maestro', 'Produccion'])
@@ -179,14 +177,13 @@ export default function Pedidos2() {
 
   // 🔹 Cada vez que cambia el rango, pedir órdenes al backend
   React.useEffect(() => {
-    const [from, to] = range
-    if (!from || !to) return
+    if (!rangeFrom || !rangeTo || !rangeFrom.isValid() || !rangeTo.isValid()) return
 
-    const inicioIso = from.startOf('day').toDate().toISOString()
-    const finIso    = to.endOf('day').toDate().toISOString()
+    const inicioIso = rangeFrom.startOf('day').toDate().toISOString()
+    const finIso    = rangeTo.endOf('day').toDate().toISOString()
 
     cargarOrdenes(inicioIso, finIso)
-  }, [range])
+  }, [rangeFrom, rangeTo])
 
   React.useEffect(() => {
     cargarProductos()
@@ -211,14 +208,14 @@ export default function Pedidos2() {
           >
             <DatePicker
               label="Desde"
-              value={range[0]}
-              onChange={(newVal) => setRange([newVal, range[1]])}
+              value={rangeFrom}
+              onChange={(newVal) => setRangeFrom(newVal)}
               slotProps={{ textField: { size: 'small', fullWidth: true } }}
             />
             <DatePicker
               label="Hasta"
-              value={range[1]}
-              onChange={(newVal) => setRange([range[0], newVal])}
+              value={rangeTo}
+              onChange={(newVal) => setRangeTo(newVal)}
               slotProps={{ textField: { size: 'small', fullWidth: true } }}
             />
 

@@ -105,10 +105,8 @@ export default function Reportes() {
   const [usuarioFiltro, setUsuarioFiltro] = React.useState('todos')
   const [clienteFiltro, setClienteFiltro] = React.useState('todos')
   const [clienteFiltroInput, setClienteFiltroInput] = React.useState('')
-    const [range, setRange] = React.useState([
-    dayjs().startOf('month'),
-    dayjs().endOf('day'),
-  ])
+  const [rangeFrom, setRangeFrom] = React.useState(dayjs().startOf('month'))
+  const [rangeTo, setRangeTo] = React.useState(dayjs().endOf('day'))
   const [deletingId, setDeletingId] = React.useState(null)
   const [confirmadas, setConfirmadas] = React.useState({})
 
@@ -547,14 +545,13 @@ export default function Reportes() {
 
   // 🔹 Cada vez que cambia el rango, pedir órdenes al backend
   React.useEffect(() => {
-    const [from, to] = range
-    if (!from || !to) return
+    if (!rangeFrom || !rangeTo || !rangeFrom.isValid() || !rangeTo.isValid()) return
 
-    const inicioIso = from.startOf('day').toDate().toISOString()
-    const finIso    = to.endOf('day').toDate().toISOString()
+    const inicioIso = rangeFrom.startOf('day').toDate().toISOString()
+    const finIso    = rangeTo.endOf('day').toDate().toISOString()
 
     cargarOrdenes(inicioIso, finIso)
-  }, [range])
+  }, [rangeFrom, rangeTo])
 
   React.useEffect(() => {
     cargarProductos()
@@ -581,14 +578,14 @@ export default function Reportes() {
           >
             <DatePicker
               label="Desde"
-              value={range[0]}
-              onChange={(newVal) => setRange([newVal, range[1]])}
+              value={rangeFrom}
+              onChange={(newVal) => setRangeFrom(newVal)}
               slotProps={{ textField: { size: 'small', fullWidth: true } }}
             />
             <DatePicker
               label="Hasta"
-              value={range[1]}
-              onChange={(newVal) => setRange([range[0], newVal])}
+              value={rangeTo}
+              onChange={(newVal) => setRangeTo(newVal)}
               slotProps={{ textField: { size: 'small', fullWidth: true } }}
             />
 
