@@ -88,6 +88,9 @@ export default function Reportes() {
   const [rangeTo, setRangeTo] = React.useState(dayjs().endOf('day'))
   const [deletingId, setDeletingId] = React.useState(null)
   const [confirmadas, setConfirmadas] = React.useState({})
+  const [modoEdicion, setModoEdicion] = React.useState(false)
+  const [cantidadesEdit, setCantidadesEdit] = React.useState({})
+  const [splitting, setSplitting] = React.useState(false)
 
   const filtered = React.useMemo(() => {
     const estadoPedido = estadosOrden.find(
@@ -247,9 +250,31 @@ export default function Reportes() {
   )
 
   const descuentoOrdenSel = getOrdenDescuento(ordenSel)
-  const subtotalOrdenSel = calcSubtotal(ordenSel?.items || [])
-  const totalOrdenSel = calcTotal(ordenSel?.items || [], descuentoOrdenSel)
+  const itemsParaTotales = React.useMemo(() => {
+    if (!ordenSel?.items) return []
+    if (!modoEdicion) return ordenSel.items
+    return ordenSel.items.map((it) => ({
+      ...it,
+      cantidad: Number(cantidadesEdit[it.id] ?? it.cantidad),
+    }))
+  }, [ordenSel, modoEdicion, cantidadesEdit])
+  const subtotalOrdenSel = calcSubtotal(itemsParaTotales)
+  const totalOrdenSel = calcTotal(itemsParaTotales, descuentoOrdenSel)
   const ordenEstaConfirmada = ordenSel ? !!confirmadas[ordenSel.id] : false
+  const puedeDividir = ordenSel?.estado_id === 2 && !ordenEstaConfirmada
+
+  React.useEffect(() => {
+    if (!ordenSel) {
+      setModoEdicion(false)
+      setCantidadesEdit({})
+      return
+    }
+    const initial = {}
+    for (const it of ordenSel.items || []) {
+      initial[it.id] = it.cantidad
+    }
+    setCantidadesEdit(initial)
+  }, [ordenSel?.id])
 
   const handleConfirmOrden = async () => {
     if (!ordenSel?.id) return
@@ -266,6 +291,80 @@ export default function Reportes() {
       setConfirmadas(prev => ({ ...prev, [ordenSel.id]: true }))
     } catch (err) {
       console.error(err)
+    }
+  }
+
+  const handleCancelarEdicion = () => {
+    if (!ordenSel) return
+    const initial = {}
+    for (const it of ordenSel.items || []) {
+      initial[it.id] = it.cantidad
+    }
+    setCantidadesEdit(initial)
+    setModoEdicion(false)
+  }
+
+  const handleSplitOrden = async () => {
+    if (!ordenSel) return
+    const items = (ordenSel.items || []).map((it) => ({
+      id: it.id,
+      cantidad_envio: Number(cantidadesEdit[it.id] ?? it.cantidad),
+    }))
+    if (items.some((i) => !Number.isInteger(i.cantidad_envio) || i.cantidad_envio < 0)) {
+      alert('Las cantidades deben ser enteros mayores o iguales a 0')
+      return
+    }
+    const sumEnvio = items.reduce((s, i) => s + i.cantidad_envio, 0)
+    if (sumEnvio <= 0) {
+      alert('Al menos 1 unidad debe enviarse')
+      return
+    }
+    const sumOriginal = (ordenSel.items || []).reduce(
+      (s, i) => s + Number(i.cantidad || 0),
+      0
+    )
+    if (sumEnvio >= sumOriginal) {
+      alert('No hay nada que dividir. Si quieres enviar todo, usa Confirmar.')
+      return
+    }
+
+    try {
+      setSplitting(true)
+      const res = await fetch(
+        `${API_BASE_URL}/ordenes/${ordenSel.id}/split`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items }),
+        }
+      )
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        alert(err.error || 'No se pudo dividir la orden')
+        return
+      }
+      const { orden_actual, orden_sobrante } = await res.json()
+      setOrdenes((prev) => {
+        const reemplazada = prev.map((o) =>
+          o.id === orden_actual.id ? orden_actual : o
+        )
+        return [...reemplazada, orden_sobrante]
+      })
+      const nuevasCantidades = {}
+      for (const it of orden_actual.items || []) {
+        nuevasCantidades[it.id] = it.cantidad
+      }
+      setCantidadesEdit(nuevasCantidades)
+      setModoEdicion(false)
+      setOrdenSel(orden_actual)
+      alert(
+        `Orden dividida. Nueva orden con el sobrante: ${orden_sobrante.codigo_orden}`
+      )
+    } catch (err) {
+      console.error(err)
+      alert('Error al dividir la orden')
+    } finally {
+      setSplitting(false)
     }
   }
 
@@ -641,14 +740,40 @@ export default function Reportes() {
                     0
 
                   const qty = getItemQty(it)
+                  const qtyEdit = Number(cantidadesEdit[it.id] ?? qty)
+                  const qtyUsada = modoEdicion ? qtyEdit : qty
 
                   return (
                     <TableRow key={it.id}>
                       <TableCell>{nombre}</TableCell>
                       <TableCell>{sku}</TableCell>
                       <TableCell align="right">Q {price.toFixed(2)}</TableCell>
-                      <TableCell align="right">{qty}</TableCell>
-                      <TableCell align="right">Q {(price * qty).toFixed(2)}</TableCell>
+                      <TableCell align="right">
+                        {modoEdicion ? (
+                          <Stack direction="row" spacing={1} alignItems="center" justifyContent="flex-end">
+                            <TextField
+                              type="number"
+                              size="small"
+                              value={cantidadesEdit[it.id] ?? qty}
+                              onChange={(e) => {
+                                const val = e.target.value
+                                setCantidadesEdit((prev) => ({
+                                  ...prev,
+                                  [it.id]: val === '' ? '' : Number(val),
+                                }))
+                              }}
+                              inputProps={{ min: 0, max: qty, step: 1 }}
+                              sx={{ width: 90 }}
+                            />
+                            <Typography variant="caption" color="text.secondary">
+                              de {qty}
+                            </Typography>
+                          </Stack>
+                        ) : (
+                          qty
+                        )}
+                      </TableCell>
+                      <TableCell align="right">Q {(price * qtyUsada).toFixed(2)}</TableCell>
                     </TableRow>
                   )
                 })}
@@ -684,7 +809,31 @@ export default function Reportes() {
             </Table>
           </DialogContent>
           <DialogActions>
-            {ordenSel && (
+            {ordenSel && puedeDividir && !modoEdicion && (
+              <Button
+                variant="outlined"
+                color="warning"
+                onClick={() => setModoEdicion(true)}
+              >
+                Editar cantidades
+              </Button>
+            )}
+            {ordenSel && modoEdicion && (
+              <>
+                <Button onClick={handleCancelarEdicion} disabled={splitting}>
+                  Cancelar edición
+                </Button>
+                <Button
+                  variant="contained"
+                  color="warning"
+                  onClick={handleSplitOrden}
+                  disabled={splitting}
+                >
+                  {splitting ? 'Dividiendo…' : 'Dividir orden'}
+                </Button>
+              </>
+            )}
+            {ordenSel && !modoEdicion && (
               <>
                 <Button
                   variant="contained"
@@ -701,7 +850,7 @@ export default function Reportes() {
                 )}
               </>
             )}
-            {ordenSel && (
+            {ordenSel && !modoEdicion && (
               <Button
                 color="error"
                 onClick={() => handleDeleteOrden(ordenSel)}
@@ -710,7 +859,9 @@ export default function Reportes() {
                 Eliminar
               </Button>
             )}
-            <Button onClick={() => setOrdenSel(null)}>Cerrar</Button>
+            <Button onClick={() => setOrdenSel(null)} disabled={splitting}>
+              Cerrar
+            </Button>
           </DialogActions>
         </Dialog>
       </Box>
