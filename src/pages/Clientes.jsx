@@ -6,6 +6,7 @@ import {
 import AddCircleIcon from '@mui/icons-material/AddCircle'
 import PersonAddAltIcon from '@mui/icons-material/PersonAddAlt'
 import EditIcon from '@mui/icons-material/Edit'
+import AutorenewIcon from '@mui/icons-material/Autorenew'
 import dayjs from 'dayjs'
 import { API_BASE_URL } from '../config/api'
 import { useAuth } from '../context/AuthContext'
@@ -471,6 +472,43 @@ export default function Clientes() {
     handleCerrarAbono()
   }
 
+  const [recalculandoCartera, setRecalculandoCartera] = React.useState(false)
+
+  const handleRecalcularCartera = async () => {
+    if (!clienteSel?.id) return
+    const confirmado = window.confirm(
+      `Se va a recalcular la cartera del cliente "${clienteSel.nombre}". ` +
+      `Esto reaplicará todos los abonos existentes a las órdenes por orden de urgencia. ` +
+      `¿Continuar?`
+    )
+    if (!confirmado) return
+
+    try {
+      setRecalculandoCartera(true)
+      const res = await fetch(
+        `${API_BASE_URL}/clientes/${clienteSel.id}/recalcular-cartera`,
+        { method: 'POST' }
+      )
+      if (!res.ok) {
+        const txt = await res.text()
+        let msg = 'No se pudo recalcular la cartera'
+        try {
+          const parsed = JSON.parse(txt)
+          msg = parsed.error || msg
+        } catch (_) {}
+        alert(msg)
+        return
+      }
+      await Promise.all([cargarOrdenes(), cargarClientes(), cargarBancos()])
+      alert('Cartera recalculada. Los saldos de las órdenes se actualizaron.')
+    } catch (err) {
+      console.error(err)
+      alert('Error de red al recalcular la cartera')
+    } finally {
+      setRecalculandoCartera(false)
+    }
+  }
+
   const handleOpenClienteDialog = () => {
     setClienteDialog({
       open: true,
@@ -751,16 +789,59 @@ export default function Clientes() {
           component={Paper}
           sx={{ borderRadius: 3, flex: 1, minWidth: 420 }}
         >
-          <Box
-            sx={{
-              p: 2,
-              pb: 0,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              gap: 1,
-            }}
-          >
+          <Box sx={{ p: 2, pb: 0 }}>
+            {clienteSel && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 1,
+                  justifyContent: 'flex-end',
+                  mb: 1.5,
+                  '& > button': {
+                    textTransform: 'none',
+                    fontWeight: 500,
+                    borderRadius: 2,
+                  },
+                }}
+              >
+                {hasAnyPermiso(['Clientes', 'Maestro', 'ClientesFinanzas']) && (
+                  <Button
+                    size="small"
+                    variant="contained"
+                    color="primary"
+                    startIcon={<AddCircleIcon />}
+                    onClick={() => handleOpenAbono(clienteSel)}
+                  >
+                    Agregar abono
+                  </Button>
+                )}
+                {hasAnyPermiso(['Maestro']) && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="warning"
+                    startIcon={<AutorenewIcon />}
+                    onClick={handleRecalcularCartera}
+                    disabled={recalculandoCartera}
+                  >
+                    {recalculandoCartera ? 'Recalculando…' : 'Recalcular Cartera'}
+                  </Button>
+                )}
+                {hasAnyPermiso(['Maestro']) && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="inherit"
+                    startIcon={<EditIcon />}
+                    onClick={() => handleOpenEditCliente(clienteSel)}
+                  >
+                    Editar cliente
+                  </Button>
+                )}
+              </Box>
+            )}
+
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 600 }}>
                 {clienteSel ? `Órdenes de ${clienteSel.nombre}` : 'Selecciona un cliente'}
@@ -786,31 +867,6 @@ export default function Clientes() {
                 </Typography>
               )}
             </Box>
-            {clienteSel && (
-              <Stack direction="row" spacing={1} alignItems="center">
-                {hasAnyPermiso(['Maestro']) && (
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<EditIcon />}
-                    onClick={() => handleOpenEditCliente(clienteSel)}
-                  >
-                    Editar cliente
-                  </Button>
-                )}
-                {hasAnyPermiso(['Clientes', 'Maestro', 'ClientesFinanzas']) && (
-                  <Button
-                    size="small"
-                    variant="contained"
-                    startIcon={<AddCircleIcon />}
-                    onClick={() => handleOpenAbono(clienteSel)}
-                    sx={{ alignSelf: 'flex-start' }}
-                  >
-                    Agregar abono
-                  </Button>
-                )}
-              </Stack>
-            )}
           </Box>
 
           {clienteSel && (
