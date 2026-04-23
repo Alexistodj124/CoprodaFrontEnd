@@ -332,6 +332,47 @@ export default function Reportes() {
     }
   }
 
+  const handleExportExcel = async () => {
+    try {
+      const params = new URLSearchParams()
+      if (rangeFrom?.isValid()) {
+        params.append('inicio', rangeFrom.startOf('day').toDate().toISOString())
+      }
+      if (rangeTo?.isValid()) {
+        params.append('fin', rangeTo.endOf('day').toDate().toISOString())
+      }
+      if (estadoFiltro.length > 0) {
+        params.append('estado_ids', estadoFiltro.join(','))
+      }
+      if (clienteFiltro && clienteFiltro !== 'todos') {
+        params.append('cliente_id', clienteFiltro)
+      }
+      if (usuarioFiltro && usuarioFiltro !== 'todos') {
+        params.append('usuario_id', usuarioFiltro)
+      }
+
+      const res = await fetch(`${API_BASE_URL}/reportes/ordenes/excel?${params.toString()}`)
+      if (!res.ok) {
+        alert('No se pudo generar el Excel. Revisa la consola.')
+        console.error('Export excel failed:', res.status, await res.text())
+        return
+      }
+
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `reporte_ordenes_${dayjs().format('YYYY-MM-DD')}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error(err)
+      alert('Error al exportar a Excel.')
+    }
+  }
+
   const handlePrintOrden = () => {
     if (!ordenSel) return
 
@@ -684,6 +725,14 @@ export default function Reportes() {
               color="primary"
               sx={{ fontWeight: 600 }}
             />
+
+            <Button
+              variant="contained"
+              color="success"
+              onClick={handleExportExcel}
+            >
+              Exportar a Excel
+            </Button>
           </Stack>
 
           
