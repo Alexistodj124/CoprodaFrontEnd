@@ -610,12 +610,27 @@ export default function Reportes() {
         </Typography>
 
         
-        <Paper sx={{ p: 2, borderRadius: 3, mb: 2 }}>
-          {/* Fila original: rango de fechas + total período */}
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={2}
-            alignItems="center"
+        <Paper sx={{ p: 2.5, borderRadius: 3, mb: 2 }}>
+          <Typography
+            variant="subtitle2"
+            sx={{ mb: 1.5, color: 'text.secondary', fontWeight: 600, letterSpacing: 0.3 }}
+          >
+            FILTROS
+          </Typography>
+
+          {/* Fila 1: filtros en grid responsivo */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
+                md: 'repeat(3, 1fr)',
+                lg: 'repeat(5, 1fr)',
+              },
+              gap: 2,
+              alignItems: 'start',
+            }}
           >
             <DatePicker
               label="Desde"
@@ -632,6 +647,7 @@ export default function Reportes() {
 
             <TextField
               select
+              fullWidth
               label="Estado"
               value={estadoFiltro}
               onChange={(e) =>
@@ -640,7 +656,6 @@ export default function Reportes() {
                 )
               }
               size="small"
-              sx={{ minWidth: 180 }}
               SelectProps={{
                 multiple: true,
                 renderValue: (selected) => {
@@ -651,6 +666,14 @@ export default function Reportes() {
                     .map((estado) => estado?.nombre || '')
                     .filter(Boolean)
                   return labels.length > 0 ? labels.join(', ') : 'Todos'
+                },
+                MenuProps: { PaperProps: { sx: { maxHeight: 320 } } },
+              }}
+              sx={{
+                '& .MuiSelect-select': {
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
                 },
               }}
             >
@@ -664,11 +687,11 @@ export default function Reportes() {
 
             <TextField
               select
+              fullWidth
               label="Usuario"
               value={usuarioFiltro}
               onChange={(e) => setUsuarioFiltro(e.target.value)}
               size="small"
-              sx={{ minWidth: 200 }}
             >
               <MenuItem value="todos">Todos</MenuItem>
               {usuarios.map((usuario) => {
@@ -713,29 +736,43 @@ export default function Reportes() {
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  label="Selecciona cliente"
+                  label="Cliente"
                   placeholder="Nombre del cliente"
                 />
               )}
-              sx={{ minWidth: 220 }}
             />
+          </Box>
 
-            <Chip
-              label={`Total en el período: Q ${formatCurrency(totalPeriodo)}`}
-              color="primary"
-              sx={{ fontWeight: 600 }}
-            />
+          <Divider sx={{ my: 2 }} />
 
+          {/* Fila 2: acción + total */}
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1.5}
+            alignItems={{ xs: 'stretch', sm: 'center' }}
+            justifyContent="space-between"
+          >
             <Button
               variant="contained"
               color="success"
               onClick={handleExportExcel}
+              sx={{ textTransform: 'none', fontWeight: 600, px: 2.5 }}
             >
               Exportar a Excel
             </Button>
+            <Chip
+              label={`Total en el período:  Q ${formatCurrency(totalPeriodo)}`}
+              color="primary"
+              sx={{
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                height: 'auto',
+                py: 1,
+                px: 1.5,
+                borderRadius: 2,
+              }}
+            />
           </Stack>
-
-          
         </Paper>
 
         <TableContainer component={Paper} sx={{ borderRadius: 3 }}>
