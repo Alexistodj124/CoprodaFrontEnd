@@ -12,6 +12,7 @@ import isBetween from 'dayjs/plugin/isBetween'
 import { API_BASE_URL } from '../config/api'
 import logoCoproda from '../assets/image.png'
 import { NumerosALetras } from 'numero-a-letras'
+import { useAuth } from '../context/AuthContext'
 dayjs.extend(isBetween)
 
 // --- Datos de ejemplo (luego los reemplazas por tu API/DB) ---
@@ -78,6 +79,8 @@ function calcGanancia(items = [], descuento = 0) {
 }
 
 export default function Reportes() {
+  const { hasAnyPermiso } = useAuth()
+  const puedeEditarBodega = hasAnyPermiso(['BodegaEditar', 'Maestro'])
   const [ordenSel, setOrdenSel] = React.useState(null)
   const [ordenes, setOrdenes] = React.useState([])
   const [productosById, setProductosById] = React.useState({})
@@ -809,7 +812,7 @@ export default function Reportes() {
             </Table>
           </DialogContent>
           <DialogActions>
-            {ordenSel && puedeDividir && !modoEdicion && (
+            {ordenSel && puedeDividir && !modoEdicion && puedeEditarBodega && (
               <Button
                 variant="outlined"
                 color="warning"
@@ -850,7 +853,7 @@ export default function Reportes() {
                 )}
               </>
             )}
-            {ordenSel && !modoEdicion && (
+            {ordenSel && !modoEdicion && puedeEditarBodega && (
               <Button
                 color="error"
                 onClick={() => handleDeleteOrden(ordenSel)}
