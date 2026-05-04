@@ -812,7 +812,7 @@ export default function Reportes() {
             </Table>
           </DialogContent>
           <DialogActions>
-            {ordenSel && puedeDividir && !modoEdicion && puedeEditarBodega && (
+            {ordenSel && puedeDividir && !modoEdicion && (
               <Button
                 variant="outlined"
                 color="warning"
