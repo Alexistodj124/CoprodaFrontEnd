@@ -188,6 +188,7 @@ export default function Inventory() {
   const productosConPrecio = React.useMemo(() => (
     productos
       .filter((p) => p.activo !== false)
+      .filter((p) => p.es_producto_final === true || p.es_terminado === true)
       .map((p) => ({
         ...p,
         descripcion: p.descripcion ?? p.nombre ?? '',
