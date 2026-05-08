@@ -424,6 +424,32 @@ export default function ProduccionProcesos() {
       const savedProductoId = data?.id ?? productoId
 
       if (savedProductoId != null) {
+        const borrarExistentes = async (recurso) => {
+          try {
+            const r = await fetch(`${API_BASE_URL}/productos/${savedProductoId}/${recurso}`)
+            if (!r.ok) return
+            const existentes = await r.json()
+            for (const it of existentes || []) {
+              if (it?.id != null) {
+                await fetch(
+                  `${API_BASE_URL}/productos/${savedProductoId}/${recurso}/${it.id}`,
+                  { method: 'DELETE' }
+                )
+              }
+            }
+          } catch (_) {
+            // noop
+          }
+        }
+
+        // Orden importante: borrar bom/componentes (referencian proceso_id de la ruta)
+        // antes de borrar la ruta, y volver a crear ruta antes de bom/componentes.
+        await borrarExistentes('bom')
+        if (!isComponente) {
+          await borrarExistentes('componentes')
+        }
+        await borrarExistentes('ruta-procesos')
+
         for (let i = 0; i < procesosRuta.length; i += 1) {
           const proceso = procesosRuta[i]
           if (!proceso?.proceso_id) continue

@@ -362,7 +362,7 @@ export default function Produccion() {
     options = {}
   ) => {
     const ordenId = ordenIdOverride ?? selectedOrdenId
-    if (!ordenId || !procesoOrdenId) return
+    if (!ordenId || !procesoOrdenId) return false
     try {
       const res = await fetch(
         `${API_BASE_URL}/ordenes-produccion/${ordenId}/procesos/${procesoOrdenId}/${accion}`,
@@ -383,7 +383,7 @@ export default function Produccion() {
           // noop
         }
         setSnack({ open: true, msg, severity: 'error' })
-        return
+        return false
       }
 
       setSnack({ open: true, msg: 'Proceso actualizado', severity: 'success' })
@@ -391,6 +391,7 @@ export default function Produccion() {
         await cargarDetalleOrden(ordenId)
         await cargarOrdenes()
       }
+      return true
     } catch (err) {
       console.error(err)
       setSnack({
@@ -398,6 +399,7 @@ export default function Produccion() {
         msg: 'Error de red al actualizar proceso',
         severity: 'error',
       })
+      return false
     }
   }
 
@@ -470,22 +472,27 @@ export default function Produccion() {
       ...(completar ? {} : { parcial: true }),
     }
 
-    await handleAccionProceso(proc.id, 'completar', payload, undefined, { skipRefresh: true })
+    const completarOk = await handleAccionProceso(proc.id, 'completar', payload, undefined, { skipRefresh: true })
 
-    if (idx >= 0 && idx < procesosOrdenados.length - 1 && salidaTotal > 0) {
+    if (completarOk && idx >= 0 && idx < procesosOrdenados.length - 1 && salidaTotal > 0) {
       const nextProc = procesosOrdenados[idx + 1]
       if (nextProc?.id) {
         const nextEntradaActual = Number(nextProc?.cantidad_entrada || 0)
         const deltaSalida = Number.isFinite(salidaInput) ? salidaInput : 0
         const nuevaEntrada = nextEntradaActual + deltaSalida
-        if (String(nextProc.estado || '').toUpperCase() === 'PENDIENTE') {
-          await handleAccionProceso(nextProc.id, 'iniciar', null, undefined, { skipRefresh: true })
+        let siguienteIniciado = String(nextProc.estado || '').toUpperCase() !== 'PENDIENTE'
+        if (!siguienteIniciado) {
+          siguienteIniciado = await handleAccionProceso(
+            nextProc.id, 'iniciar', null, undefined, { skipRefresh: true }
+          )
         }
-        await handleAccionProceso(nextProc.id, 'completar', {
-          cantidad_entrada: nuevaEntrada,
-          cantidad_salida: Number(nextProc?.cantidad_salida || 0),
-          parcial: true,
-        }, undefined, { skipRefresh: true })
+        if (siguienteIniciado) {
+          await handleAccionProceso(nextProc.id, 'completar', {
+            cantidad_entrada: nuevaEntrada,
+            cantidad_salida: Number(nextProc?.cantidad_salida || 0),
+            parcial: true,
+          }, undefined, { skipRefresh: true })
+        }
       }
     }
 
