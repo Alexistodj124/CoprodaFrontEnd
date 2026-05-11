@@ -46,7 +46,7 @@ const modules = [
   },
   {
     to: '/COPRODA/procesos/nuevo',
-    permiso: 'Produccion',
+    permiso: 'maestro',
     title: 'Nuevo Proceso',
     icon: PlaylistAddIcon,
     subtitle: 'Crear un proceso del catálogo',
@@ -61,13 +61,14 @@ const modules = [
   {
     to: '/COPRODA/stocks?tab=materias',
     permiso: 'maestro',
+    altPermisos: ['Produccion'],
     title: 'Stocks Materia Prima',
     icon: ScienceIcon,
     subtitle: 'Stock de materias primas',
   },
   {
     to: '/COPRODA/materias-primas/nueva',
-    permiso: 'Produccion',
+    permiso: 'maestro',
     title: 'Materia Prima',
     icon: AddCircleOutlineIcon,
     subtitle: 'Crear una nueva materia prima',
@@ -75,6 +76,7 @@ const modules = [
   {
     to: '/COPRODA/stocks?tab=componentes',
     permiso: 'maestro',
+    altPermisos: ['Produccion'],
     title: 'Stocks Componentes',
     icon: Inventory2Icon,
     subtitle: 'Stock de componentes y sub-ensambles',

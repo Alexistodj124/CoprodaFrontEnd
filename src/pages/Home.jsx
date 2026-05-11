@@ -23,7 +23,7 @@ const modules = [
   { to: '/COPRODA/clientes', permiso: 'Clientes', altPermisos: ['ClientesVentas', 'ClientesFinanzas'], title: 'Clientes', icon: PortraitIcon, subtitle: 'Historial y abonos por cliente' },
   { to: '/COPRODA/abonos', permiso: 'Abonos', title: 'Abonos', icon: PaymentsIcon, subtitle: 'Abonos aplicados por cliente' },
   { to: '/COPRODA/bancos', permiso: 'Bancos', title: 'Bancos', icon: AccountBalanceIcon, subtitle: 'Pagos sin asignar' },
-  { to: '/COPRODA/stocks', permiso: 'maestro', title: 'Stocks', icon: InventoryIcon, subtitle: 'Stocks de productos y materias primas' },
+  { to: '/COPRODA/stocks', permiso: 'maestro', altPermisos: ['Produccion'], title: 'Stocks', icon: InventoryIcon, subtitle: 'Stocks de productos y materias primas' },
   { to: '/COPRODA', title: 'Inicio', icon: InventoryIcon, subtitle: 'Volver al panel principal' },
 ]
 

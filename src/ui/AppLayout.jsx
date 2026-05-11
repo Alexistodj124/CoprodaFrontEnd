@@ -91,7 +91,7 @@ export default function AppLayout() {
                   Reportes
                 </Button>
               ) : null}
-              {canAccess('maestro') ? (
+              {canAccess('maestro') || canAccess('Produccion') ? (
                 <Button color="inherit" component={RouterLink} to="/COPRODA/stocks">
                   Stocks
                 </Button>
