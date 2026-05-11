@@ -157,7 +157,7 @@ const router = createBrowserRouter(
         {
           path: 'stocks',
           element: (
-            <RequirePermiso permisos={['maestro']}>
+            <RequirePermiso permisos={['maestro', 'Produccion']}>
               <Stocks />
             </RequirePermiso>
           ),
@@ -165,7 +165,7 @@ const router = createBrowserRouter(
         {
           path: 'materias-primas/nueva',
           element: (
-            <RequirePermiso permiso="Produccion">
+            <RequirePermiso permisos={['maestro']}>
               <MateriaPrimaNueva />
             </RequirePermiso>
           ),
@@ -173,7 +173,7 @@ const router = createBrowserRouter(
         {
           path: 'procesos/nuevo',
           element: (
-            <RequirePermiso permiso="Produccion">
+            <RequirePermiso permisos={['maestro']}>
               <ProcesoNuevo />
             </RequirePermiso>
           ),
